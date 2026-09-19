@@ -1,4 +1,4 @@
-> **与代码同步于：2026-09-19，save VER=3**
+> **与代码同步于：2026-09-21，save VER=4**
 > 基准：仓库根目录。主 PRD 见 [`../PRD.md`](../PRD.md)。
 
 # 《那年的红白机》核心与系统层技术文档
@@ -7,7 +7,7 @@
 
 ## 1. 存档数据结构 (Save System)
 
-存档通过 `localStorage` 存储，KEY 为 `nianhong_save_v1`（改名前是 `subor_summer_save_v1`，读不到新键时搬一次老键；新键一个字符都不能再改）。当前版本 `SB.Save.VER = 3`。系统具备版本平滑迁移策略：`load()` 只要读到带 `v` 字段的档就收（含 `v` 比当前更大的档），以默认值（`def()`）为基准递归合并（`merge()`），再按 `migrate(from)` 补语义。
+存档通过 `localStorage` 存储，KEY 为 `nianhong_save_v1`（改名前是 `subor_summer_save_v1`，读不到新键时搬一次老键；新键一个字符都不能再改）。当前版本 `SB.Save.VER = 4`。系统具备版本平滑迁移策略：`load()` 只要读到带 `v` 字段的档就收（含 `v` 比当前更大的档），以默认值（`def()`）为基准递归合并（`merge()`），再按 `migrate(from)` 补语义。
 
 **硬规矩**：数值与对象型状态一律不许塞进 `flags`。`flags` 的默认值是 `{}`，`merge()` 不会给它内部的键回填默认值，老档读出来是 `undefined`。剧情类状态集中在有显式默认值的 `story` 对象里。
 
@@ -37,6 +37,7 @@
 | `seenIntro` | Boolean | 客厅开场文案播过没 | `false` |
 | `story` | Object | 剧情状态（见 §1.3） | 见下 |
 | `stats` | Object | 统计数据（`blows/rubs/reseats/slaps/repairs/boots/plays/buys/days`，抢救三档 `rescueClean/rescueClose/rescueFail`，运行时另加 `cleared`） | - |
+| `chores` | Object | 主动干活的记录：`{day, done, slots, owed, owedSrc}`（见 §7.6） | `{day:0, done:{}, slots:{}, owed:0, owedSrc:''}` |
 | `flags` | Object | **只放布尔位**：`prologue`（序章看过没）、`prologueSkipped`、天热 `hot`、停电/暴雨 `blocked`、发小串门 `friendVisit`、课本摊开 `bookOpen`、妈出门 `momOut`、`examDone`、`momWarm`、`endingVariant` | `{prologue:false, prologueSkipped:false}` |
 | `settings` | Object | `crt(0-2) / scanline / bgm / sfx / mic / shake` | `{1, true, 0.5, 0.8, false, true}` |
 | `album` | Array | 解锁的「回忆」条目 | `[]` |
@@ -72,6 +73,7 @@
 | :--- | :--- |
 | `from < 2` | 补 `lent/dueDay`；`told=false` + `legacyNote=true`（客厅用一句短的补设定，不重播开场）；按 `owned.console2` 追认 `ownConsole`；把手上的钱记成 `ledger.total` 并标 `legacy`；心情按 `60 - caught*5 + (momTrust-50)*0.3` 估初值（钳在 5–95） |
 | `from < 3` | 一律 `flags.prologue = true`：老档的夏天早就开始了，半路插四分钟 2026 年的加班夜等于打断进度，想看的从回忆册第一条重看 |
+| `from < 4` | 补 `chores`，`chores.day` 对齐当天，`done`/`slots` 清空，`owed = 0`：老档没有干活记录，而「今天」已经过了一半 —— 次数从零算起，才不会让他一进门就发现碗已经刷满了。挂账归零是因为老档不存在「已经干了活还没拿到钱」这回事 |
 
 ---
 
@@ -270,11 +272,50 @@
 - `endingTail()`：两句「后来」，按买到没有分版。
 
 ### 7.6 心愿单
-`wishItems()` 直接拿 `SB.UI.menu` 当纸片用（信息行 `disabled`，最后一行才是按钮）：今天进账 → 来源明细（≤3 条）→ 兜里一共 → 砍价省下（>0 才显示）→ 二手主机价格与差额 → 柜子上那台还剩几天 → 心情 → 章节 → 「知道了」。
+`wishItems()` 直接拿 `SB.UI.menu` 当纸片用（信息行 `disabled`，最后一行才是按钮）：今天进账 → 来源明细（≤3 条）→ 兜里一共 → 砍价省下（>0 才显示）→ 二手主机价格与差额 → 柜子上那台还剩几天 → 心情 → 章节 → 「知道了」。当天还没有任何进账时，额外插三条**告诉他钱从哪儿来**：「每天零花钱 / 睡一觉后 ￥0.5」、「日常机会 / 瓶子·废纸·跑腿」、「帮家里干活 / 小方桌 刷碗·扫地·搬货」—— 前两条是等来的，第三条是现在就能去做的。
 
 ---
 
-## 8. 模块间依赖关系
+## 8. 家务系统 (Chore System，`src/systems/chore.js` + `src/data/chores.js`)
+
+日常事件（§4.2）是**等来的**钱，这一节是**自己去找的**钱。规矩与数值全在 `SB.CHORES` 一张表里，逻辑层只读表。
+
+### 8.1 家务表
+
+| id | 名字 | 报酬 | AP | 可做时段 | 一天上限 | 每时段上限 | 付款方 | 信任 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `dish` | 刷碗 | ￥0.2 | 1 | `morning` `noon` `night` | 3 | 1 | `mom` | +2 |
+| `sweep` | 扫地 | ￥0.3 | 1 | `morning` `after` | 1 | — | `mom` | +2 |
+| `trash_out` | 倒垃圾 | ￥0.1 | 1 | `dusk` `night` | 1 | — | `mom` | +1 |
+| `haul` | 帮小卖部搬货 | ￥0.5 | 1 | `morning` `after` `dusk` | 1 | — | `shop` | — |
+
+报酬**写死不随机** —— 妈妈给的是「刷一次碗两毛」这种固定规矩，不是抽奖。
+
+「刷碗不能刷到手软」不靠冷却时间，靠两道天然闸门：饭点（`slots` + `perSlot`）和精力（每样 1 AP，一天只有 4 格）。注意 `spend(1)` 会推进一个时段，所以想在一天里真刷满三次碗，必须把时段一路走到晚上 —— 上限 3 只是天花板，不是日常。
+
+### 8.2 判定与结算
+
+- `check(id)` → `{ok, code, why}`，`code` ∈ `ok` / `slot` / `slotDone` / `max` / `ap`。`why` 是给玩家看的一句话。
+- `items()` 给菜单行，**干不了的活不置 `disabled`**：灰行光标跳不过去，玩家就永远读不到原因，只会以为功能坏了。改成照样能选中，按下去用 `why` 解释。
+- `doChore(id)` 在 `SB.Time.spend()` **之前**取好 `slotAt` 与 `home`（`momHome()`），否则推进时段会把「一顿一次」和「妈在不在家」同时算错。
+- **妈在家** → `paid = true`、信任 `+trust`；钱**不在这一层进兜**，等收钱特写的 `onDone` 调 `SB.Story.earn()`。
+- **妈不在家** → `owed += pay`、`owedSrc = src`，不涨信任（她没看见你蹲在那儿刷）。她一回客厅就由 `RoomScene.settleOwed()` 兑出去。
+- 跨天是**懒清零**：`state()` 第一次被问到时发现 `chores.day` 不是今天，就地清 `done`/`slots`，`SB.Time.sleep()` 里一行都不用加。**`owed` 绝不跟着跨天清掉** —— 活是真干了的，钱就一定要到手。
+- `breakdown(v)` 把金额拆成 2 / 1 / 0.5 / 0.2 / 0.1 的面额数组（最多 8 件，拆出来加回去一分不差），收钱特写照着它一枚一枚数。
+
+### 8.3 谁给钱（`SB.PAYERS` / `SB.PAY_BY_SRC`）
+
+| 付款方 | 在哪儿 | 管哪些账本来源 |
+| :--- | :--- | :--- |
+| `mom` 妈 | 厨房门口 | `dish` `sweep` `trash_out` `soy` `exam` + 所有挂账 |
+| `laohan` 收废品的老汉 | 院门外 | `trash` `bottle` `books` |
+| `shop` 小卖部老板 | 小卖部柜台 | `errand` `haul` |
+
+`allowance`（睡一觉的五毛）与 `find`（沙发缝里摸到）**查不到付款方**，照旧只出一行文字 —— 那笔本来就没人给。表现层见 [`02_scenes_ui_input.md`](02_scenes_ui_input.md) 与 `src/anim/payAnim.js`。
+
+---
+
+## 9. 模块间依赖关系
 
 - **Save (核心存储)**：所有系统通过 `SB.Save.d` 读写状态，是系统的唯一数据源。
 - **Repair -> Save**：高频更新 `dirt`、`wear`、`stats`。
@@ -282,7 +323,8 @@
 - **Parent -> Save / Story / Audio**：监控玩家的即时操作（`tvOff` 等），在 `resolve()` 时修改信任度、惩罚状态与心情。
 - **Economy -> Save / Story / Data**：从静态表读取基准，向存档写入购买结果，并把砍价战果和「买到主机」这件事交给剧情层。
 - **Story -> Save / Data**：只读 `SB.STORY`（表与常量）与 `SB.L.story`（文案），只写 `Save.d.story` 与回忆册；不认识任何场景。
+- **Chore -> Save / Time / Story / Data**：读 `SB.CHORES` 表和当前时段/精力，写 `Save.d.chores` 与信任度；**自己不记账**，钱交给场景在收钱特写结束时 `Story.earn()`，这样「画面没走完就把钱算了」这种 bug 没有存在的余地。
 
 ---
 *文档编制日期：2026-09-17*
-*基于源码版本：nianhong-fc v1（save VER=3）*
+*基于源码版本：nianhong-fc v1（save VER=4）*

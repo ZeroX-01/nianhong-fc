@@ -120,8 +120,16 @@ const PORT = process.env.PORT || '8100';
     ok('心愿单上写着柜子上那台是借的', /借的/.test(wishTxt));
     ok('没进账时，心愿单直接写明每天五毛怎么拿', /每天零花/.test(wishTxt) && /睡一觉后.*0\.5/.test(wishTxt), wishTxt);
     ok('没进账时，心愿单直接列出日常挣钱机会', /日常机会/.test(wishTxt) && /瓶子.*废纸.*跑腿/.test(wishTxt), wishTxt);
+    /* 日常机会是等来的，主动干活是自己找的。心愿单必须把「现在就能去做」
+     * 那一条也写出来，还要说清去哪儿找（小方桌），否则玩家只会干等。 */
+    ok('没进账时，心愿单还写明现在就能去干活，以及去哪儿找',
+      /帮家里干活/.test(wishTxt) && /小方桌/.test(wishTxt) && /刷碗/.test(wishTxt), wishTxt);
     ok('第一次进客厅会讲明攒钱办法', S.L.story.lent.some(x => /每天五毛零花钱/.test(x) && /瓶子/.test(x)));
-    ok('集市钱不够时会告诉玩家下一步', S.L.market.poor.some(x => /睡一觉/.test(x) && /挣钱/.test(x)));
+    /* 钱不够的时候必须把两条路都说出来：睡一觉的五毛是被动的，
+     * 小方桌上挑活是主动的 —— 只说前者，玩家就只会一直睡觉。 */
+    ok('集市钱不够时会把两条挣钱的路都说出来',
+      S.L.market.poor.some(x => /睡一觉/.test(x) && /(挑点活干|干活)/.test(x)),
+      S.L.market.poor.join(' / '));
     ok('心愿单上有心情', wish.some(i => i.label === '心情'));
     ok('心愿单只有最后一行能按',
       wish.filter(i => !i.disabled).length === 1 && !wish[wish.length - 1].disabled);

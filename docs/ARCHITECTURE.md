@@ -1,6 +1,6 @@
 # 那年的红白机 — 工程与架构说明
 
-> 与代码同步于：2026-09-19，save VER=3，Phaser 3.60
+> 与代码同步于：2026-09-21，save VER=4，Phaser 3.60
 
 这份文档回答一个问题：**你要改这个工程里的某个东西，该从哪儿下手、不能碰什么。**
 所有函数签名与字段名请配合 [API.md](API.md) 查；美术/音频/字体规格见 [ART_MANIFEST.md](ART_MANIFEST.md)、[AUDIO_SPEC.md](AUDIO_SPEC.md)、[FONT_SPEC.md](FONT_SPEC.md)、[PALETTE.md](PALETTE.md)；玩法定义见 [PRD.md](PRD.md) 与 [prd_src/](prd_src/)。
@@ -13,7 +13,7 @@
 - **Phaser 3.60**，本地 `vendor/phaser.min.js`，不连 CDN。
 - **ES5 写法**：`var`、函数表达式、`Phaser.Class`、原型继承。每个文件是一个 IIFE，往 `window.SB` 上挂东西。
 - **逻辑分辨率固定 480×270**，`pixelArt: true` + `roundPixels: true` + `Scale.FIT` 整数放大。电视画面区是中间的 **360×270**（`SB.SCREEN`），左右各 60px 是木框。
-- **存档只有 localStorage 一处**，键 `nianhong_save_v1`（改名前是 `subor_summer_save_v1`，第一次读档时自动搬过来，老键不删），当前 `SB.Save.VER = 3`。
+- **存档只有 localStorage 一处**，键 `nianhong_save_v1`（改名前是 `subor_summer_save_v1`，第一次读档时自动搬过来，老键不删），当前 `SB.Save.VER = 4`。
 - 叙事分两层：**现实层 2026**（序章，深夜加班后在出租车上睡着）和**梦境层 2004**（正片，小学暑假 48 天）。
 
 改代码的三条底线：
@@ -46,16 +46,19 @@ src/systems/            玩法规则（只算数，不画画）
   parent.js             SB.Parent：妈妈的秒表、三级警告、进门清算
   rescue.js             SB.Rescue：听见动静之后的「抢救三下」判定规则（纯规则，不碰 Phaser）
   story.js              SB.Story：心情、账本、目标、章节、结局变体
+  chore.js              SB.Chore：主动干活的规矩与账（能不能干/干了几次/谁给钱）
 src/games/              小游戏
   GameBase.js           SB.GameBase 基类 + SB.extendGame()
   ContraGame.js TankGame.js MarioGame.js FightGame.js   四个完整小游戏
   StubGame.js           stub/null/multi/garble/crash 五种"盗版卡演出"
 src/anim/
   repairAnim.js         SB.RepairAnim：哈气/划桌动作特写（纯表现层）
+  payAnim.js            SB.PayAnim：收钱全屏特写（纯表现层，记账在 onDone 的调用方）
   prologueArt.js        SB.PROLOGUE_PAINT：序章 11 张画面的画法
 src/data/               纯数据，不含逻辑
   assets.js             SB.ASSETS 资源清单
   cartridges.js         SB.CARTS / SB.GOODS / SB.MULTI_MENU
+  chores.js             SB.CHORES 家务表 / SB.PAYERS 付款方 / SB.PAY_BY_SRC 来源映射
   story.js              SB.STORY 剧情结构与常量（含序章 12 个分镜）
   lines.js              SB.L 主文案树 + SB.line()
   storyLines.js         SB.L.story 剧情/序章/结局文案
@@ -76,13 +79,13 @@ test-game.html          单个小游戏的调试页（不初始化完整 SB，�
 ```
 1. vendor/phaser.min.js
 2. 数据与常量   core/const.js → data/assets.js → data/cartridges.js
-                data/lines.js → data/story.js → data/storyLines.js
+                data/lines.js → data/story.js → data/storyLines.js → data/chores.js
 3. 核心系统     core/save.js → core/audio.js → core/input.js
                 core/text.js → core/ui.js → core/crt.js
-4. 玩法系统     systems/timeSystem.js → economy.js → repair.js → parent.js → rescue.js → story.js
+4. 玩法系统     systems/timeSystem.js → economy.js → repair.js → parent.js → rescue.js → story.js → chore.js
 5. 小游戏       games/GameBase.js → Contra → Tank → Mario → Fight → Stub
 6. core/keyguide.js        ← 必须在小游戏之后
-7. 动作特写     anim/repairAnim.js → anim/prologueArt.js
+7. 动作特写     anim/repairAnim.js → anim/payAnim.js → anim/prologueArt.js
 8. 场景         Sys → Boot → Title → Prologue → Room → Repair → Shelf
                 → Market → Friend → Homework → Play → Settings → Album
 9. src/main.js
@@ -214,7 +217,7 @@ flowchart TD
 ## 7. 存档与迁移
 
 - 键：`nianhong_save_v1`（在 `save.js` 里是局部变量 `KEY`）。老键 `subor_summer_save_v1` 在 `OLD_KEY`：`load()` 读不到新键时会把它搬过来存一份，老键不删（退回旧版本还能玩）。**新键一个字符都不能再改。**
-- 版本：`VER = 3`，写在存档的 `v` 字段。
+- 版本：`VER = 4`，写在存档的 `v` 字段。
 - `SB.Save.load()` 的判定刻意放宽：只要是 `typeof d.v === 'number' && d.v >= 1` 就收，先 `merge(def(), d)` 补齐结构，再 `migrate(from)` 补语义。比当前版本更新的档也不清，多出来的键原样保留。
 - 顶层字段（完整清单见 [API.md](API.md#sbsave)）：进度（`day/slot/ap/money`）、卡带（`carts`）、主机与电视（`inserted/seated/fault/hidden/tvOn/bulbOn/slotDirt/pads`）、物品（`goods/owned`）、惩罚（`padGone/cartSeized`）、妈妈（`momTrust/caught/escaped`）、作业（`homework`）、剧情（`story`）、布尔位（`flags`）、统计（`stats`）、设置（`settings`）、回忆册（`album`）。
 
@@ -325,11 +328,11 @@ this.game_.create();
 
 ## 12. 资源、构建与测试
 
-**资源全是脚本生成的**，`assets/` 是产物：`tools/gen_font.py`（点阵字）、`gen_room.py`、`gen_char.py`、`gen_cart.py`、`gen_crt.py`、`gen_ui.py`、`gen_market.py`、`gen_repair_anim.py`、`gen_game_*.py`、`gen_audio.py`（+ `nes_synth.py`）。改画面先改脚本，别手 P 图。
+**资源全是脚本生成的**，`assets/` 是产物：`tools/gen_font.py`（点阵字）、`gen_room.py`、`gen_char.py`、`gen_cart.py`、`gen_crt.py`、`gen_ui.py`、`gen_market.py`、`gen_repair_anim.py`、`gen_pay_anim.py`、`gen_game_*.py`、`gen_audio.py`（+ `nes_synth.py`）。改画面先改脚本，别手 P 图。
 
-- 新增图：登记到 `SB.ASSETS.images` / `sheets`，`BootScene` 自动加载。**例外**：`SB.RepairAnim.preload(scene)` 由 `RepairScene` 自己 preload，刻意不进全局清单，也不改 `BootScene`。
+- 新增图：登记到 `SB.ASSETS.images` / `sheets`，`BootScene` 自动加载。**例外**：`SB.RepairAnim.preload(scene)` 由 `RepairScene`、`SB.PayAnim.preload(scene)` 由 `RoomScene` 各自 preload，刻意不进全局清单，也不改 `BootScene`。
 - 新增音：进 `assets/audio/manifest.json`（`sfx` / `bgm` 两组，每条形如 `{ key, file, duration, volume }`，BGM 另有 `loop`），`SB.Audio.queue()` 会自动排队，同时挂 `.ogg` 与 `.mp3` 两个候选。
-- 帧表一致性：`src/anim/repairAnim.js` 的 `MS`/`PHASES` 与 `tools/gen_repair_anim.py` 的 `BLOW`/`RUB` 一一对应，**改一头必须改另一头**。
+- 帧表一致性：`src/anim/repairAnim.js` 的 `MS`/`PHASES` 与 `tools/gen_repair_anim.py` 的 `BLOW`/`RUB` 一一对应；`src/anim/payAnim.js` 的 `MS`/`PHASES` 与 `tools/gen_pay_anim.py` 的五帧一一对应，三个付款方共用同一张时间表和同一个取景框。**改一头必须改另一头。**
 
 打包：`bash tools/build_dist.sh` → `dist/`。脚本会把 `dist/src/core/audio.js` 里的音频候选从 `[.ogg, .mp3]` 改写成只留 `.mp3`（并用 `assert` 卡住这句话——改动 `SB.Audio.queue()` 的那一行时 build 会直接失败提醒你）。
 
@@ -371,6 +374,8 @@ this.game_.create();
 | 客厅某个东西的位置 | `SB.ROOM`（`src/core/const.js`）+ `RoomScene.buildSpots()`，然后跑热点测试 |
 | 加一件商品 | `SB.GOODS`（一次性用 `once`，可堆叠用 `stack`，浮动价用 `vary`）+ `MarketScene.zhangMenu()` |
 | 加一张卡带 | `SB.CARTS` 追加（`id` 决定 `assets/img/cart/cart_XX.png` 与 `SB.CART_TINT`）+ `save.js` 的 `def()` 自动生成卡带状态 |
+| 加一样家务 | `SB.CHORES` 追加一项（`slots`/`max`/`perSlot`/`pay`/`payer` 全在表里），账本显示名进 `SB.STORY.ledgerNames`，台词进 `SB.L.chore` 与 `SB.L.pay[付款方]`，然后跑 `chore_pay_test` |
+| 加一个付款方 | `SB.PAYERS` 加一项（`tex`/`who`/`place`）+ `SB.PAY_BY_SRC` 把来源指过去 + `tools/gen_pay_anim.py` 画一张 5 帧图（帧序必须和另外三张一致）+ `SB.L.pay` 写台词 |
 | 加一个故障类型 | `SB.FAULT` + `SB.Repair.rollFault()` 权重 + `SB.Repair` 对应修法 + `CRT.prototype.setFault()` 表现 |
 | 加一种修法 | `src/systems/repair.js` 加方法 → `RepairScene.buildButtons()` 加按钮 → 需要动作特写就扩 `SB.RepairAnim` 与 `tools/gen_repair_anim.py` |
 | 加一个场景 | 新建 `src/scenes/XxxScene.js`（`SB.XxxScene = new Phaser.Class({...})`）→ `index.html` 加 `<script>` → `src/main.js` 场景数组加一项 → 用 `SB.UI.go()` 进出并约定好 `from` |

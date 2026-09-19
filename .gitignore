@@ -9,6 +9,7 @@ __pycache__/
 # 测试脚本跑出来的截图与中间产物
 tools/_tmp_audio/
 tools/gametest/bugfix/
+tools/gametest/chore_pay/
 tools/gametest/contra/
 tools/gametest/deployed/
 tools/gametest/fight/

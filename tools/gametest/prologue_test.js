@@ -353,12 +353,12 @@ const ok = (c, m) => { if (c) { pass++; console.log('  PASS ' + m); } else { fai
     S.Save.load();
     const s = S.Save.d;
     return {
-      v: s.v, day: s.day, money: s.money, cart: !!s.carts['01'].owned,
+      v: s.v, ver: S.Save.VER, day: s.day, money: s.money, cart: !!s.carts['01'].owned,
       pro: !!s.flags.prologue, skipped: !!s.flags.prologueSkipped,
       needPro: !s.flags.prologue
     };
   });
-  ok(old.v === 3, '老档升到 v3（' + old.v + '）');
+  ok(old.v === old.ver, '老档升到当前版本 v' + old.ver + '（实际 v' + old.v + '）');
   ok(old.day === 20 && old.money === 12.5 && old.cart, '老档的天数 / 钱 / 卡带一样没丢（第 ' + old.day + ' 天 ￥' + old.money + '）');
   ok(old.pro === true && old.skipped === false, '老档一律记成「序章看过」，不会半路被塞四分钟');
   ok(!old.needPro, '老玩家点「继续那个夏天」直接回客厅');

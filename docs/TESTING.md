@@ -1,11 +1,11 @@
-> **与代码同步于：2026-09-19，save VER=3**
+> **与代码同步于：2026-09-21，save VER=4**
 > 基准：仓库根目录。主 PRD 见 [`PRD.md`](PRD.md)，用例明细见 [`prd_src/04_test_cases.md`](prd_src/04_test_cases.md)。
 
 # 《那年的红白机》测试手册
 
 这份文档写给「改完代码不知道该跑什么」的人。它只记已经躺在 `tools/gametest/` 里、真的能跑出结果的东西；每个脚本的覆盖点都是照着脚本开头的注释和它实际的断言抄下来的，不写「测试功能」这种话。
 
-全部结果都是 2026-09-19 这一轮实测，跑法与端口见 §2。
+全部结果都是 2026-09-21 这一轮实测，跑法与端口见 §2。
 
 ---
 
@@ -18,7 +18,7 @@
 | 层 | 干什么 | 代表脚本 |
 | :--- | :--- | :--- |
 | **端到端流程** | 从标题一路走到通关，跨场景、跨天数，抓「链路断了」 | `flow_test`、`flow2_test`、`flow3_test`、`smoke_outer` |
-| **场景 / 专题级** | 盯住一屏或一个机制，断言密度最高，是主力 | `prologue_test`、`keys_ui_test`、`gamekeys_test`、`move_input_test`、`rescue_test`、`staff_test`、`bugfix_title_room_test`、`repair_anim_test`、`settings_test` |
+| **场景 / 专题级** | 盯住一屏或一个机制，断言密度最高，是主力 | `prologue_test`、`keys_ui_test`、`gamekeys_test`、`move_input_test`、`rescue_test`、`staff_test`、`bugfix_title_room_test`、`repair_anim_test`、`chore_pay_test`、`settings_test` |
 | **规则单测** | 不看画面，只跑公式与存档 | `systems_test`、`story_core_test`、`tank_unit`、`check_mario_map` |
 | **截图回归** | 出图给人眼看，不做断言 | `prologue_shots`、`keys_ui_shots`、`gamekeys_shots`、`story_shots`、`shot_scene` |
 | **部署后冒烟** | 打完包、上线之后验「打开链接能不能玩」 | `deployed_smoke` |
@@ -60,7 +60,7 @@ node tools/gametest/prologue_test.js 8131
 | 端口传参方式 | 脚本 |
 | :--- | :--- |
 | `argv[2]` 或 `PORT=`，**也可以直接传线上 URL** | `prologue_test`、`prologue_shots`、`bugfix_title_room_test`、`move_input_test` |
-| `argv[2]` 或 `PORT=`，只认端口（不支持 URL） | `gamekeys_test`、`gamekeys_shots`、`repair_anim_test`（默认 **8110**） |
+| `argv[2]` 或 `PORT=`，只认端口（不支持 URL） | `gamekeys_test`、`gamekeys_shots`、`repair_anim_test`（默认 **8110**）、`chore_pay_test`（默认 **8142**） |
 | 只认 `PORT=` 环境变量，`argv[2]` 是别的用途 | `story_core_test`、`story_shots`（`argv[2]` 是文件名 TAG） |
 | **端口写死 8100，传参无效** | `systems_test`、`flow_test`、`flow2_test`、`flow3_test`、`settings_test`、`keys_ui_test`、`keys_ui_shots`、`play_integration`、`smoke_outer`、`shot_scene`、`dbg_play`、`dbg_replay` |
 | **端口写死 8102** | `tank_test`、`tank_unit` |
@@ -111,6 +111,7 @@ curl -s http://localhost:8100/index.html | diff -q - index.html && echo "是本�
 | `bugfix_title_room_test.js` | 两个死屏 / 误触 bug 的回归：**标题页**——主菜单自动端上来、走到「重新过一次暑假」弹确认、选「不了」主菜单必须回来且光标停在原处、提示条跟着切回、回来的菜单还是活的、鼠标路径同样走一遍、选「重新开始」真能开新档、以及强行关掉主菜单后半秒内必须自己回来的看门狗；**客厅**——13 个点击框两两不重叠且至少留 2px 缝、每个框中心 hover 命中的是它自己、小方桌与门各自开各自的菜单、TAB 走完一圈 13 个目标时底部提示 / 选中框 / 物件名三处说的是同一个东西 | `node tools/gametest/bugfix_title_room_test.js 8131`（支持 URL） | **37 过 / 0 挂** |
 | `staff_test.js` | 标题屏那页藏起来的制作名单：秘技 ↑↑↓↓←→←→ 输到一半不许出现、输错一下从头数（且认「错的这一下正好是新序列第一下」）、八下输对名单出来且五行字都在（署名在里面）、名单开着时主菜单必须是 close 状态（否则底下的菜单偷键）、按任意键收回且主菜单原位回来、连开关三次都稳、整段零报错。脚本自己起服务器，还会先核对 `document.title` —— 端口被别的项目占着时起服务器是静默失败的 | `node tools/gametest/staff_test.js`（默认 8141，可传端口或 URL） | **15 过 / 0 挂** |
 | `repair_anim_test.js` | 修卡台两个动作特写：哈气两口气（`push1 → hold → push2 → finish` 四拍都在、中间有「停一下看看干净没」的停顿、总时长 2 秒量级）、蓄力帧号随 `blowPower` 单调上去、划桌三拍（`prep → stroke1 → lift → stroke2 → finish`）、动画能跳过且**跳过之后数值照常结算**、连着来三次自动变短（2090 → 1499 → 796ms）、取景框 `[168,58–312,192]` 不压脏污条 / 磨损条 / 按钮列 / 右上返回 / 底部提示条、数值规则一行没变（哈太弱无效、太猛 +7 脏、同次修卡递减 -20 → -16、划 3 下 -27 磨损 0、划 5 下 -20 磨损 +10） | 服务器 **8110**（或传端口）；`node tools/gametest/repair_anim_test.js 8131` | **30 过 / 0 挂**（必须单独跑，见 §6.2） |
+| `chore_pay_test.js` | 主动干活挣钱 + 收钱特写，分两段。**规矩**：碗只在上午 / 中午 / 晚上三个饭点后有（一顿一次，所以一天顶到三次，满了说得出「3」）、地只白天扫、垃圾只等傍晚那趟车、小卖部只在开门时搬货、没劲了报的是 `ap`、妈在家当场给且涨信任 / 妈不在家钱先挂着且不涨信任、跨天清次数但**绝不清挂账**、挂账只能结算一次、五类来源对到三个付款方（`find`/`allowance` 不走收钱屏）、拆钱加回去一分不差且最多八件、干不了的活**不置灰**（灰行光标跳不过去就读不到原因）、v3 老档能补上 `chores`。**演出**：小方桌上「帮家里干活」写着现在有几样能干、干活那屏头一行先说妈在不在家、刷完碗真起特写且 `__interludeOpen > 0`、钱在特写走完才进兜、按 A 一枚枚数 / 按 B 一把数完 / **演出中把客厅整个 `scene.stop()` 掉**三条路进账金额一模一样、日常事件（`rollEvent` 已记账）那屏只演不记账、同一天第二三遍越看越短（2860 → 1973 → 820ms）、字幕最长三行且压不到「按 A」那一行 | 服务器 **8142**（或传端口）；`node tools/gametest/chore_pay_test.js 8142` | **77 过 / 0 挂** |
 | `settings_test.js` | 机器背面那排旋钮：音量能调低且**立刻作用到正在放的 BGM**（0.225 → 0.045）、能拧到 0 不变负数、显像管档位左右到底都停住、扫描线开关、麦克风权限失败老实退回「长按代替」而不是白屏、B 能回标题、设置真的写进 localStorage | 服务器 **8100**；`node tools/gametest/settings_test.js` | **16 过 / 0 挂** |
 
 ### 3.3 规则单测
@@ -203,7 +204,8 @@ curl -s http://localhost:8100/index.html | diff -q - index.html && echo "是本�
 | `src/games/*.js` | ★`play_integration`（先确认 12 张都还能进）、再跑对应单测：坦克 `tank_unit` + `tank_test`、马里蘑 `check_mario_map` + `feature_mario` + `play_mario`、拳霸 `fight_test`；最后 `gamekeys_test` |
 | `RoomScene.js`、`src/core/ui.js`、`TitleScene.js` | ★`bugfix_title_room_test`（点击框 + 死屏看门狗）、★`staff_test`（藏起来的名单）、★`keys_ui_test`、`flow_test`、`flow2_test` |
 | `MarketScene.js`、`src/systems/economy.js` | ★`systems_test`、★`story_core_test`（二手主机 + 账本）、`flow2_test`、`flow3_test` |
-| `src/systems/story.js`、结局、账本、章节 | ★`story_core_test`、`flow2_test`（第 48 天结局） |
+| `src/systems/story.js`、结局、账本、章节 | ★`story_core_test`、★`chore_pay_test`（账本来源名 + 进账只记一次）、`flow2_test`（第 48 天结局） |
+| `src/data/chores.js`、`src/systems/chore.js`、`src/anim/payAnim.js`、`SB.L.pay` | ★`chore_pay_test`。改报酬 / 时段 / 次数上限只需动 `chores.js` 那张表，但**时段字段改了就要回来改用例里的时段矩阵**；改台词长度要重跑「字幕最长三行」那两条 |
 | `src/systems/parent.js` | ★`systems_test`、★`story_core_test`（被抓原因 + 作业本降档）、★`rescue_test`（罚时是直接推 `Parent.t`，改了秒表就会连带变）、`flow2_test`（被抓 / 抢救两条路） |
 | `src/systems/rescue.js`、`PlayScene` 的抢救层、判定手感数字 | ★`rescue_test`、★`flow2_test`（抢救那一段）、`keys_ui_test`（`SB.L.rescue` 的缺字）、`gamekeys_test`（抢救开始会清掉键位卡） |
 | `SettingsScene.js`、`src/core/audio.js`、`crt.js` | ★`settings_test`、`systems_test`（音频清单） |

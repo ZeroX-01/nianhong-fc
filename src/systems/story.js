@@ -225,6 +225,9 @@
         /* 玩家第一次打开账本时还没有流水，这里正好把规则讲清楚。
          * 有了实际进账以后改看明细，避免菜单超过 11 行。 */
         items.push({ label: '每天零花', sub: '睡一觉后 ￥0.5', disabled: true });
+        /* 现在挣钱不只靠等：小方桌上那一项是玩家自己能按的。
+         * 它排在「日常机会」前面 —— 能主动做的事要先说。 */
+        items.push({ label: '帮家里干活', sub: '小方桌　刷碗·扫地·搬货', disabled: true });
         items.push({ label: '日常机会', sub: '瓶子·废纸·跑腿', disabled: true });
       }
       for (i = 0; i < rows.length && i < 3; i++) {

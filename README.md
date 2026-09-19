@@ -1,4 +1,4 @@
-> **与代码同步于：2026-09-19，save VER=3**
+> **与代码同步于：2026-09-21，save VER=4**
 
 # 那年的红白机
 
@@ -66,7 +66,7 @@ python3 -m http.server 8100
 
 ## 玩什么
 
-- **一条正经目标：买下自己那台。** 客厅那台是借的，开学前必须还（存档里 `story.lent` / `dueDay = 48`）。集市上有一台二手小旋风主机，标价 45 块、每天在 41–49 之间浮动。每天五毛零花钱，卖废品、退酒瓶、卖旧课本、帮人搬货各有零头，全部记进账本；心愿单和集市提示条常驻显示「还差多少」。48 天不是倒计时压力，是一条能每天推一点的进度条。
+- **一条正经目标：买下自己那台。** 客厅那台是借的，开学前必须还（存档里 `story.lent` / `dueDay = 48`）。集市上有一台二手小旋风主机，标价 45 块、每天在 41–49 之间浮动。每天五毛零花钱，卖废品、退酒瓶、卖旧课本、帮人搬货各有零头；想多挣一点还能自己去小方桌挑活干 —— 刷碗（一顿饭后一次，一天顶到三次）、扫地（趁白天）、倒垃圾（等傍晚那趟车）、帮小卖部搬货，每样一格精力。钱是有人**当面数给你**的：家里的活妈给，酒瓶废纸收废品的老汉给，跑腿搬货小卖部老板给，按 A 一枚一枚数进手心。全部记进账本；心愿单和集市提示条常驻显示「还差多少」。48 天不是倒计时压力，是一条能每天推一点的进度条。
 - **修卡是这游戏的心脏**。每张卡带有「脏」和「磨损」两个值，主机卡槽还有自己的灰。开机失败会抽一种故障，故障现象直接告诉你该干什么：
   | 现象 | 该做的事 |
   | --- | --- |
@@ -106,17 +106,18 @@ python3 -m http.server 8100
 
 - Phaser **3.60.0**（本地 `vendor/phaser.min.js`，不联网、不依赖 CDN），逻辑分辨率 480×270 整数放大，ES5 / IIFE，全挂在 `window.SB` 上，无构建步骤。
 - 美术与音频全部脚本生成（`tools/gen_*.py`、`tools/nes_synth.py`），调色板与规格见 `docs/`。
-- 存档在 localStorage，键 `nianhong_save_v1`，结构版本 `VER = 3`，靠 `load()` + `migrate()` 往上升，老档不清。改名前的老键 `subor_summer_save_v1` 会在第一次读档时自动搬过来（老键不删，退回旧版本还能玩）。
+- 存档在 localStorage，键 `nianhong_save_v1`，结构版本 `VER = 4`，靠 `load()` + `migrate()` 往上升，老档不清。改名前的老键 `subor_summer_save_v1` 会在第一次读档时自动搬过来（老键不删，退回旧版本还能玩）。
 
 ```
 index.html            入口，按依赖顺序加载脚本
 src/core/             const / save / audio / input / keyguide / text / ui / crt
-src/systems/          timeSystem / economy / repair / parent / rescue / story
+src/systems/          timeSystem / economy / repair / parent / rescue / story / chore
 src/scenes/           Boot Title Prologue Room Shelf Repair Play Market Friend
                       Homework Settings Album Sys
 src/games/            GameBase + Contra / Tank / Mario / Fight / Stub(合卡·乱码·空卡·崩溃)
 src/anim/             prologueArt(序章 12 镜的画法) / repairAnim(哈气与划桌特写)
-src/data/             assets / cartridges / lines / story / storyLines（全部文案与剧情表）
+                      payAnim(收钱全屏特写)
+src/data/             assets / cartridges / lines / story / storyLines / chores（文案与数值表）
 assets/               img / audio / font（脚本生成产物）
 tools/                资源生成脚本 + gametest/ 自动化测试
 docs/                 PRD、架构、接口、测试手册、变更记录、美术与音频规格
@@ -151,7 +152,7 @@ cd nianhong-fc
 python3 -m http.server 8100
 ```
 
-**注意**：多数测试脚本的端口是写死在源码里的（`8100`，坦克 `8102`、马里蘑 `8103`、拳霸 `8104`），命令行传参不生效；只有 `prologue_test` / `prologue_shots` / `bugfix_title_room_test` / `move_input_test` / `repair_anim_test`（默认 `8110`）能接端口或完整 URL。跑之前先确认端口是你自己的，否则会测到别的站点、得到一整片莫名其妙的失败。详见 [`docs/TESTING.md`](docs/TESTING.md)。
+**注意**：多数测试脚本的端口是写死在源码里的（`8100`，坦克 `8102`、马里蘑 `8103`、拳霸 `8104`），命令行传参不生效；只有 `prologue_test` / `prologue_shots` / `bugfix_title_room_test` / `move_input_test` / `repair_anim_test`（默认 `8110`）/ `chore_pay_test`（默认 `8142`）能接端口或完整 URL。跑之前先确认端口是你自己的，否则会测到别的站点、得到一整片莫名其妙的失败。详见 [`docs/TESTING.md`](docs/TESTING.md)。
 
 ### 跑回归
 
@@ -164,7 +165,8 @@ python3 tools/check_font.py                   # 字库体检：源码里写了�
 python3 tools/check_words.py                  # 文字规避：上屏文案里的商标词 / 真实作品名 / 内部信息
 
 node tools/gametest/gamekeys_test.js          # 电视里的按键指引：时机、内容、不压 HUD    121 过
-PORT=8100 node tools/gametest/story_core_test.js  # 借来的机器/二手主机/账本/心情/结局      80 过
+PORT=8100 node tools/gametest/story_core_test.js  # 借来的机器/二手主机/账本/心情/结局      85 过
+node tools/gametest/chore_pay_test.js 8142     # 主动干活的规矩 + 收钱特写（钱不许丢）      77 过
 node tools/gametest/keys_ui_test.js           # 键位、可点返回、详情面板排版、缺字         73 过
 node tools/gametest/prologue_test.js 8100     # 序章 12 镜：结构/节奏/跳过/老档/重看/门禁  63 过
 node tools/gametest/move_input_test.js        # 小游戏 WASD、开场提示、触屏十字键命中      45 过

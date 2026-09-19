@@ -8,7 +8,7 @@
    * 版本号走 v 字段，靠 load() + migrate() 往上升。 */
   var KEY = 'nianhong_save_v1';
   var OLD_KEY = 'subor_summer_save_v1';   // check-words: allow（只为读老档，不上屏）
-  var VER = 3;
+  var VER = 4;
 
   SB.Save = {
     VER: VER,
@@ -69,6 +69,16 @@
           /* 零花钱账本：today/src 每天清零，total/saved 是整个夏天的累计 */
           ledger: { day: 0, today: 0, total: 0, saved: 0, src: {}, legacy: false },
           ending: null           // 命中的结局变体 id
+        },
+        /* 今天干过的活。day 是「这份记录属于哪一天」，跨天靠 SB.Chore 懒清零，
+         * 不进 SB.Time.sleep() 的重置列表 —— 那张表只管当天的临时状态，
+         * 而 owed（妈妈还没回来、钱先记着）必须跨天留住。 */
+        chores: {
+          day: 0,                // 这份 done 记录属于第几天
+          done: {},              // { choreId: 今天干了几次 }
+          slots: {},             // { choreId: [干过的时段 index] }，刷碗靠它卡「一顿饭一次」
+          owed: 0,               // 妈不在家时干的活，钱先挂着
+          owedSrc: ''            // 挂着的那笔是干什么挣的（只留最后一项，用来说话）
         },
         /* flags 里只放布尔位（老档读进来是 undefined，!!undefined === false，安全）。
          * prologue：2026 那个晚上看过没有；prologueSkipped：是不是跳着看的。 */
@@ -149,6 +159,21 @@
          * 一律记成「看过」，想看的从回忆册第一条重看。 */
         d.flags.prologue = true;
         d.v = 3;
+        dirty = true;
+      }
+
+      if (from < 4) {
+        /* 主动家务：老档没有这张表。merge() 已经把默认值补进来了，
+         * 这里只把「这份记录属于哪一天」钉到今天 —— 否则 day 是 0，
+         * 跟当前天不等，第一次问它就会被当成隔天记录清一遍，
+         * 结果没差别，但白写一次盘。owed 一律按 0（没人欠他钱）。 */
+        if (!d.chores) d.chores = { day: 0, done: {}, slots: {}, owed: 0, owedSrc: '' };
+        d.chores.day = d.day;
+        d.chores.done = {};
+        d.chores.slots = {};
+        d.chores.owed = 0;
+        d.chores.owedSrc = '';
+        d.v = 4;
         dirty = true;
       }
 

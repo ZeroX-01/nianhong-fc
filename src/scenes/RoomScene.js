@@ -32,6 +32,12 @@
       this.momSprite = null;
     },
 
+    preload: function () {
+      /* 收钱特写那四张图只有这一屏会用到，跟修卡台的做法一样：
+       * 场景自己拉，不占开机时那条加载进度条。 */
+      if (SB.PayAnim && SB.PayAnim.preload) SB.PayAnim.preload(this);
+    },
+
     create: function () {
       var self = this, s = SB.Save.d;
 
@@ -115,19 +121,56 @@
       }
       if (this.from === 'title') { this.dailyCheck(); return; }
       this.refresh();
+      this.settleOwed();
     },
 
     /* 每天第一次进客厅：抽一个日常事件 */
     dailyCheck: function () {
       var self = this, s = SB.Save.d;
-      if (s.flags.dayRolled === s.day) { this.refresh(); return; }
+      if (s.flags.dayRolled === s.day) { this.settleOwed(); return; }
       s.flags.dayRolled = s.day;
       var ev = SB.Time.rollEvent();
       SB.Save.save();
-      if (!ev) { this.refresh(); this.armMom(); return; }
+      if (!ev) { this.refresh(); this.armMom(); this.settleOwed(); return; }
+
+      /* 有进账的事件不再只弹一行「（￥1.2）」：那笔钱是有人递给你的，
+       * 谁递的、说了什么，走收钱特写。查不到付款方的（沙发缝里摸到钱）
+       * 照旧只出文字 —— 那笔本来就没人给。
+       * 注意 rollEvent() 已经把钱加进账本了，所以这里只放演出，不能再 earn。 */
+      var gain = ev.money ? (ev.__gain || 0) : 0;
+      var payer = gain > 0 && SB.Chore ? SB.Chore.payerOf(ev.id) : null;
       var txt = ev.text;
-      if (ev.money) txt += '\n（' + SB.money(ev.__gain || 0) + '）';
-      this.say([txt], function () { self.refresh(); self.armMom(); });
+      if (ev.money && !payer) txt += '\n（' + SB.money(gain) + '）';
+
+      this.say([txt], function () {
+        self.refresh();
+        self.armMom();
+        if (!payer || !SB.PayAnim) { self.settleOwed(); return; }
+        self.busy = true;
+        SB.PayAnim.play(self, {
+          payer: payer.id, src: ev.id, amount: gain,
+          onDone: function (v) {
+            self.busy = false;
+            if (!self.alive()) return;
+            self.refresh();
+            self.cheer(v, ev.id);
+            self.settleOwed();
+          }
+        });
+      });
+    },
+
+    /* 妈不在家的时候干的活，钱挂着。她一回来就该给了 ——
+     * 这是唯一一个把挂账兑出去的地方，所以每次进客厅都要问一次。 */
+    settleOwed: function () {
+      var self = this;
+      this.refresh();
+      if (!SB.Chore || SB.Chore.owed() <= 0) return;
+      if (!SB.Time.momHome()) return;
+      if (this.busy) return;
+      var got = SB.Chore.takeOwed();
+      if (!got) return;
+      this.payAndCheer('mom', got.src, got.pay, true, got.src);
     },
 
     /* ---------------------------------------------------------------- 画客厅 */
@@ -586,13 +629,24 @@
 
     deskMenu: function () {
       var self = this, s = SB.Save.d;
+      /* 她回来了，而你手里还挂着一笔。先把钱结了再说别的 ——
+       * 走到桌边看见她在屋里，这是最自然的一个结算时机。 */
+      if (SB.Chore && SB.Chore.owed() > 0 && SB.Time.momHome() && !this.busy) {
+        this.settleOwed();
+        return;
+      }
+      var n = SB.Chore ? SB.Chore.availCount() : 0;
       var items = [
         { label: '写作业', sub: s.homework > 0 ? '已写 ' + s.homework + '%' : '一点没写', value: 'hw' },
+        /* 挣钱的入口必须摆在明面上，而且要告诉他「现在有几样能干」——
+         * 否则玩家点进去看到四行灰的，会以为这功能坏了。 */
+        { label: '帮家里干活', sub: n > 0 ? '这会儿有 ' + n + ' 样能干' : '这会儿没活', value: 'chore' },
         { label: '把作业本摊开在桌上', sub: s.flags.bookOpen ? '已经摊着了' : '只能少问两句', value: 'open' },
         { label: '算了', value: 'x' }
       ];
       this.openMenu({ title: '小方桌', items: items }, function (v) {
         if (v === 'hw') SB.UI.go(self, 'Homework', { from: 'Room' });
+        else if (v === 'chore') self.choreMenu();
         else if (v === 'open') {
           var did = SB.Parent.actions.openBook();
           if (self.book && self.book.setFrame) self.book.setFrame(1);
@@ -602,6 +656,122 @@
           else self.say(['本子已经摊在那儿了。铅笔还横在上面。']);
         }
       });
+    },
+
+    /* ---------------------------------------------------------------- 干活挣钱
+     * 干不了的活不藏起来，一律列出来灰掉，原因写在 sub 上，点它会告诉你
+     * 为什么现在不行。玩家得先知道「垃圾要等傍晚」，才会为了那一毛钱
+     * 专门留一格精力到傍晚 —— 这才是这套规矩存在的意义。 */
+    choreMenu: function () {
+      var self = this;
+      var items = SB.Chore.items();
+      /* 头一行是「她在不在家」。家里的活是妈给钱的，她不在就只能挂账，
+       * 这件事必须在他按下去之前就看见。 */
+      items.unshift({
+        label: SB.Time.momHome() ? '妈在屋里' : '妈不在家',
+        sub: SB.Time.momHome() ? '干完当场给钱' : '干完先记着，等她回来',
+        disabled: true
+      });
+      items.push({ label: '不干了', value: 'x' });
+      this.openMenu({ title: '帮家里干活', items: items }, function (v) { self.doChore(v); });
+    },
+
+    doChore: function (id) {
+      var self = this;
+      var c = SB.Chore.byId(id);
+      if (!c) return;
+      var r = SB.Chore.check(id);
+      if (!r.ok) { SB.Audio.sfx('ui_error', { volume: 0.4 }); this.say([r.why]); return; }
+
+      var res = SB.Chore.doChore(id);
+      if (!res.ok) { SB.Audio.sfx('ui_error', { volume: 0.4 }); this.say([res.why]); return; }
+
+      this.refresh();
+      var open = SB.L.chore && SB.L.chore[id] ? SB.L.chore[id] : ['你把这活干完了。'];
+      this.say(open, function () {
+        if (res.paid) { self.payAndCheer(res.payer, res.src, res.pay, false, id); return; }
+        /* 她不在家。活干了，钱记着 —— 这句话必须说清楚，
+         * 不然玩家会以为白干了一格精力。 */
+        self.refresh();
+        self.say([
+          '屋里没人。你把活干完了，钱先记着 —— 等她回来。',
+          '（记着 ' + SB.money(SB.Chore.owed()) + '）'
+        ], function () { self.refresh(); });
+      });
+    },
+
+    /* 这一屏还在台上吗。收钱特写是异步的：它的 onDone 可能在客厅已经被
+     * 换掉之后才回来（睡觉、进集市、被强行 stop）。那时候 hud / 小孩 / 飘字
+     * 全都销毁了，再去 refresh 就是往 null 上写字。 */
+    alive: function () {
+      return !!(this.scene && this.scene.isActive() && this.hud);
+    },
+
+    /* 收钱特写 → 记账 → 小孩自己高兴那一下。
+     * 记账放在特写的 onDone 里：钱到账和「看见钱到账」必须是同一件事。 */
+    payAndCheer: function (payerId, src, amount, owed, choreId) {
+      var self = this;
+      this.busy = true;
+      if (!SB.PayAnim || !payerId || !(amount > 0)) {
+        /* 没有付款方（沙发缝里摸到的钱）或者这一屏没装起来：直接进账，
+         * 一分不能少 —— 表现层可以缺，账不能缺。 */
+        if (amount > 0) SB.Story.earn(amount, src);
+        this.busy = false;
+        this.refresh();
+        this.cheer(amount, choreId || src);
+        return;
+      }
+      SB.PayAnim.play(this, {
+        payer: payerId, src: src, amount: amount, owed: !!owed,
+        onDone: function (v) {
+          /* 记账永远要做 —— 哪怕画面已经没了。 */
+          SB.Story.earn(v, src);
+          self.busy = false;
+          /* 但刷 HUD、飘字、跳两下都要有画面才行。客厅被换掉之后
+           * 这些控件已经销毁，再 setText 就是往 null 上写字。 */
+          if (!self.alive()) return;
+          self.refresh();
+          self.cheer(v, choreId || src);
+        }
+      });
+    },
+
+    /* 小孩自己那一下高兴。不新画帧 —— 原地跳两下、飘一行字、响一声。
+     * 这是「钱到手」这件事在场景里的回声，跟特写屏里的数钱是两回事。 */
+    cheer: function (amount, srcKey) {
+      var self = this, s = SB.Save.d;
+      var L = SB.L.cheer || {};
+      var word = L[srcKey] || L.any || '兜里多了几毛钱。';
+      var calm = false;
+      try { calm = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+      catch (e) { calm = false; }
+
+      /* 飘字：从小孩头顶往上飘一小截，淡出 */
+      var kx = (SB.ROOM.kid ? SB.ROOM.kid.x : 120) + 12;
+      var ky = (SB.ROOM.kid ? SB.ROOM.kid.y : 200) - 10;
+      var t = SB.Text.add(this, kx, ky, '+' + SB.money(amount), 12, SB.C.YEL4)
+        .setOrigin(0.5, 1).setDepth(SB.D.FADE - 1);
+      if (calm) {
+        this.time.delayedCall(1200, function () { if (t) t.destroy(); });
+      } else {
+        this.tweens.add({
+          targets: t, y: ky - 16, alpha: 0, duration: 1100, ease: 'Quad.easeOut',
+          onComplete: function () { t.destroy(); }
+        });
+      }
+
+      /* 跳两下。只动 y，不换帧 —— 这一版没给小孩画高兴的样子，
+       * 硬换帧会露出「他在原地抽搐」的马脚。 */
+      if (this.kid && !calm) {
+        var y0 = this.kid.y;
+        this.tweens.add({
+          targets: this.kid, y: y0 - 4, duration: 130, ease: 'Quad.easeOut',
+          yoyo: true, repeat: 1,
+          onComplete: function () { if (self.kid) self.kid.y = y0; }
+        });
+      }
+      SB.Audio.sfx('ui_confirm', { volume: 0.45 });
+      SB.UI.toast(this, word + '（兜里 ' + SB.money(s.money) + '）', 2200);
     },
 
     doorMenu: function () {

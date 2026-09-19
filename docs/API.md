@@ -1,6 +1,6 @@
 # 那年的红白机 — 内部 API 参考
 
-> 与代码同步于：2026-09-19，save VER=3，Phaser 3.60
+> 与代码同步于：2026-09-21，save VER=4，Phaser 3.60
 
 本手册只收录**代码里真实存在**的公开函数与属性，按模块（文件）分节，顺序与 `index.html` 的加载顺序一致。
 架构、场景流转、加载顺序与"改代码前必读的坑"见 [ARCHITECTURE.md](ARCHITECTURE.md)。
@@ -31,8 +31,10 @@
 - [`SB.Parent`](#sbparent)
 - [`SB.Rescue`](#sbrescue)
 - [`SB.Story`](#sbstory)
+- [`SB.Chore`](#sbchore)
 - [`SB.GameBase` / `SB.extendGame` / `SB.Games`](#sbgamebase--sbextendgame--sbgames)
 - [`SB.RepairAnim`](#sbrepairanim)
+- [`SB.PayAnim`](#sbpayanim)
 - [`SB.PROLOGUE_PAINT`](#sbprologue_paint)
 - [数据表](#数据表)
 - [场景](#场景)
@@ -120,6 +122,7 @@
 | `borrowedFrom` | `null` | 卡带借自谁。 |
 | `seenIntro` | `false` | 客厅开场那段看过没。 |
 | `story` | 见下 | 剧情状态集中地。 |
+| `chores` | `{day:0, done:{}, slots:{}, owed:0, owedSrc:''}` | 主动干活的记录，见 [`SB.Chore`](#sbchore)。`done`/`slots` 按 id 记今天干过几回、在哪几个时段干的，跨天由 `SB.Chore.state()` 懒清零；**`owed` 不跨天清** —— 妈不在家时干的活，钱一定要到手。 |
 | `flags` | `{prologue:false, prologueSkipped:false}` | **只放布尔位**。运行中还会出现 `momOut` `blocked` `hot` `friendVisit` `bookOpen` `examDone` `momWarm` 等。 |
 | `stats` | `{blows, rubs, reseats, slaps, repairs, boots, plays, buys, days, rescueClean, rescueClose, rescueFail}` | 统计；`cleared`、`playMs` 由 `PlayScene` 运行时追加。`rescue*` 三个由 `SB.Rescue.settle()` 记。 |
 | `settings` | `{crt:1, scanline:true, bgm:0.5, sfx:0.8, mic:false, shake:true}` | 设置。`SB.Input.wantTouch()` 另会读可选的 `touchPad`（`'on'`/`'off'`）。 |
@@ -553,6 +556,28 @@ Guide 实例（`PlayScene.guide`）：`reset()`（新的一局，含 RESET 和�
 
 ---
 
+## `SB.Chore`
+
+`src/systems/chore.js`。主动干活的规矩和账。**这一层不画任何东西**：场景问它「小方桌上该列哪几项、哪几项现在不行、为什么」，它答；干完了来报一声，它记账、结算、决定这笔钱当场给还是先挂着。数据表在 `src/data/chores.js`（`SB.CHORES` / `SB.PAYERS` / `SB.PAY_BY_SRC` / `SB.PAY_DENOM`）。
+
+| 成员 | 说明 |
+|---|---|
+| `state()` | 今天的记录 `{day, done, slots, owed, owedSrc}`。**顺手做跨天懒清零**：发现 `chores.day` 不是今天就地清 `done`/`slots`，`owed` 故意不动。所有别的方法都从这里进。 |
+| `all()` / `byId(id)` | 家务表 / 按 id 取一项。 |
+| `doneToday(id)` | 今天这样活干过几回。 |
+| `slotCount(id, slot)` | 这个时段干过几回（`dish` 的 `perSlot` 靠它）。 |
+| `inSlot(id)` | 现在这个时段有没有这样活。 |
+| `check(id)` | 能不能干：`{ok, code, why}`。`code` ∈ `ok` / `slot`（不是这个时段）/ `slotDone`（这顿干过了）/ `max`（今天到顶）/ `ap`（没劲了）。`why` 是给玩家看的一句话。 |
+| `items()` | 菜单行 `[{label, sub, value, subTint, __code, __why}]`。**干不了的活不置 `disabled`** —— 灰行光标跳不过去，玩家就读不到原因。 |
+| `availCount()` | 这会儿有几样能干（小方桌副标题用）。 |
+| `doChore(id)` | 干活。返回 `{ok, pay, payer, src, paid, owed, sawIt, why}`。`paid=true` 表示当场给（钱**不在这一层进兜**，等收钱特写的 `onDone`）；`owed=true` 表示妈不在家、钱记进 `chores.owed` 且不涨信任。内部在 `SB.Time.spend()` **之前**就取好 `slotAt` 与 `home`，否则推进时段会把「一顿一次」和「妈在不在家」都算错。 |
+| `owed()` / `owedSrc()` | 挂着多少钱、是干什么挣的。 |
+| `takeOwed()` | 交出挂账并清零，`{pay, src, payer}`；没有就 `null`。只能成功一次。 |
+| `payerOf(src)` | 账本来源 → 付款方对象（`SB.PAYERS` 的一项）。查不到返回 `null`（`allowance` / `find` 就是没人给）。 |
+| `breakdown(v)` | 把金额拆成面额数组（2 / 1 / 0.5 / 0.2 / 0.1），最多 8 件，拆出来加回去一分不差。数钱那一下用它。 |
+
+---
+
 ## `SB.GameBase` / `SB.extendGame` / `SB.Games`
 
 `src/games/GameBase.js`。构造：`new Ctor(host, opts)`，其中 `host` 是 `PlayScene`，`opts` 由宿主给出 `{cartId, twoP, atFriend, mode}`。
@@ -626,6 +651,32 @@ Guide 实例（`PlayScene.guide`）：`reset()`（新的一局，含 RESET 和�
 `Player` 实例方法：`build()` `bounds()` `show(kind)` `hide()` `setFrame(f)` `startCharge(kind, opts)` `setCharge(v)` `run(kind, names, opts)` `enter(i)` `isPlaying()` `isRunning()` `update(dt)` `skip()` `finish()` `cancel()` `destroy()`。
 
 > 数值结算不在这一层。`RepairScene` 用 `pendingFix` + `flushFix()` 保证动画播完、被跳过、或中途离场都不会丢那一下。
+
+---
+
+## `SB.PayAnim`
+
+`src/anim/payAnim.js`。收钱的全屏特写，**纯表现层**：它不认识家务规则，也不碰账本。做法与 `SB.RepairAnim` 一致 —— **不切 Scene**，用全屏叠层演出，看着像独立画面。帧表与 `tools/gen_pay_anim.py` 一一对应。
+
+| 成员 | 说明 |
+|---|---|
+| `FW` / `FH` | `200` / `140`，付款方单帧尺寸。 |
+| `HW` / `HH` | `80` / `56`，前景收钱手单帧尺寸。 |
+| `BOX` / `HAND` | 取景框左上角 `{x:140, y:34}`（480 宽居中）/ 手在框内的位置 `{x:100, y:78}`。 |
+| `MS` | `[700, 520, 460, 620, 560]`，按帧号挂毫秒，三个付款方共用。 |
+| `PHASES` | `greet` / `reach` / `out` / `give` / `let`，每项 `{name, from, to}` 是闭区间帧号。 |
+| `TEX` | `{pay_mom, pay_laohan, pay_shop, pay_hand}` → 图片路径。 |
+| `preload(scene)` | 场景自己 preload 这四张图 —— 和 `RepairAnim` 一样**刻意不进 `SB.ASSETS`**。 |
+| `ready(scene)` | 图在不在。 |
+| `timeline(names, speed?)` / `totalMs(tl)` / `phaseOf(name)` / `duration(names, speed?)` | 同 `RepairAnim` 的同名方法。 |
+| `plan(seen)` | 看第 `seen` 遍（0 起）该用什么倍速、保留哪些拍子：`{speed, names}`。`0` → 完整五拍 ×1（2860ms）；`1` → 五拍 ×1.45（1973ms）；`≥2` → 只剩 `out/give/let` ×2（820ms）。 |
+| `seenToday()` / `resetSeen()` | 今天看过几遍（**只存在内存里**，刷新重算）。 |
+| `play(scene, opts)` | 放一屏。`opts = {payer, src, amount, owed, onDone}`，返回 `Show` 实例。 |
+| `Show` | 演出构造器，一般不直接用。实例上可读 `stage`（`act`/`count`/`tail`/`over`）、`counted`、`got`、`items`、`closed`、`payerId`。 |
+
+`play()` 的 **`onDone(amount)` 就是记账边界**，它一定被调用且**只调用一次** —— 按 B 跳过、数到一半、甚至场景被强行 `scene.stop()`（内部挂了 `scene.events.once('shutdown')` 兜底）都要把全额交出去。真正 `earn()` 的是调用方：主动干活在 `onDone` 里记账，日常事件的钱 `SB.Time.rollEvent()` 已经记过，所以那一屏**只演出、不记账**。
+
+演出期间 `SB.__interludeOpen++`，客厅的一切交互全锁住；`prefers-reduced-motion` 下走静态快版。`onDone` 是异步回来的，所以调用方刷画面前要先确认这一屏还在台上（`RoomScene.alive()`）。
 
 ---
 
@@ -719,7 +770,7 @@ Guide 实例（`PlayScene.guide`）：`reset()`（新的一局，含 RESET 和�
 | `SB.game` / `SB.started` | `main.js` | `Phaser.Game` 实例 / 已启动标记（`started` 之后不再把 window error 抛到脸上）。 |
 | `SB.MISSING` | `BootScene` | `{资源key: true}`，加载失败清单；缺图会用色块兜底。 |
 | `SB.__dialogOpen` | `SB.UI.dialog` | 当前打开的对话框计数。 |
-| `SB.__interludeOpen` | `SB.UI.interlude` | 当前播放的过场计数。 |
+| `SB.__interludeOpen` | `SB.UI.interlude`、`SB.PayAnim` | 当前播放的过场计数。收钱特写也占一格 —— 它不是 `interlude`，但要的是同一种「别人都别动」。 |
 | `SB.__menu` | `SB.UI.menu` | 最近建出来的菜单 api（关闭时清空）。 |
 | `scene.__uiMenus` | `SB.UI.menu` | 这一屏所有菜单的 api 列表，`SB.UI.openMenus()` 读它。 |
 | `scene.__going` | `SB.UI.go` | 换场锁，`shutdown` 时解开。 |
@@ -727,6 +778,7 @@ Guide 实例（`PlayScene.guide`）：`reset()`（新的一局，含 RESET 和�
 | `d.__nomom` | 测试/调试 | 关掉妈妈的秒表（`RoomScene` / `PlayScene` 都读它）。 |
 | `d.__momHome` | `SB.Time` / `SB.Parent` | 本时段"妈在不在家"的抽样缓存，换时段/睡觉时清空。 |
 | `d.__friendP1` | `FriendScene` | 上次谁拿的 1P，**会落盘**。 |
+| `scene.__paySpy` | 测试 | `chore_pay_test` 把 `SB.PayAnim.play` 包一层，把 `Show` 实例挂到场景上好读内部状态。正式代码不写它。 |
 
 > 这些 `__` 字段都不在 `SB.Save.def()` 里，但 `merge()` 会保留存档里多出来的键，所以一旦写进去就会留在档里。正式流程请勿使用。
 

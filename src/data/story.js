@@ -54,6 +54,9 @@
     /* 账本上进账来源的名字。键对应 SB.L.events 的 id，另加一个 allowance。 */
     ledgerNames: {
       allowance: '零花钱',
+      dish:      '刷碗',
+      sweep:     '扫地',
+      trash_out: '倒垃圾',
       trash:     '卖废品',
       bottle:    '退酒瓶',
       errand:    '帮人搬货',

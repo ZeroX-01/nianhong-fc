@@ -1,4 +1,4 @@
-> **与代码同步于：2026-09-19，save VER=3**
+> **与代码同步于：2026-09-21，save VER=4**
 > 基准：仓库根目录。主 PRD 见 [`../PRD.md`](../PRD.md)，跑法与回归矩阵见 [`../TESTING.md`](../TESTING.md)。
 
 # 自动化测试体系事实汇总
@@ -34,6 +34,24 @@
 | systems_test | SY-05 | 妈妈检测校验 | 开启电视，`arm('out')` | 调用 `Parent.resolve()` | PASS 电视一开妈妈就上路了（armed）/ 电视开着被抓 = level 2 / 藏得干净就没事 level 0 / 摊开本子不等于写了作业 |
 | systems_test | SY-06 | 时间与到期校验 | 新档 | 消耗精力、睡觉、推进天数 | PASS 干一件事扣 1 点精力 / 睡一觉进第 2 天且合上作业本 / 暑假共 48 天 / 手柄没收几天后会还回来 / 借来的卡到期会还掉且不留在主机里 |
 | systems_test | SY-07 | 资源清单校验 | 启动完成 | 遍历音频与贴图清单 | PASS 音频加载成功（sfx 58 / bgm 11）/ 没有缺图 / 12 张卡带都在册 / 四个真游戏都注册了 |
+| chore_pay_test | CH-01 | 刷碗的饭点闸门 | 新档，`chores.day` 对齐当天 | 逐个时段调 `Chore.check('dish')` | PASS 只有上午 / 中午 / 晚上能刷 / 下午和傍晚不行且说的是「得等下一顿饭吃完」（`code='slot'`） |
+| chore_pay_test | CH-02 | 一顿一次 / 一天三次 | 同上，预置 `done.dish` 与 `slots.dish` | 同时段再查 / 满 3 次后再查 | PASS 同一个时段不让再刷（`slotDone`）/ 换一顿饭又有了 / 满三回到顶且提示里带「3」 |
+| chore_pay_test | CH-03 | 其余三样活的时段 | 新档 | 逐时段查 `sweep` / `trash_out` / `haul` | PASS 地只趁白天扫 / 垃圾只等傍晚那趟车 / 小卖部只在开门时搬货 / 三样都是一天一次 |
+| chore_pay_test | CH-04 | 没劲了 | `ap = 0` | `check('dish')` | PASS `code='ap'` 且提示里说的是「没劲」 |
+| chore_pay_test | CH-05 | 妈在家当场给 | `__momHome=true`，中午 | `doChore('dish')` | PASS `paid=true` / 信任涨了 / **钱还没进兜**（等收钱屏）/ 次数 +1 / 精力 -1 |
+| chore_pay_test | CH-06 | 妈不在家就挂账 | `__momHome=false`，中午 | `doChore('dish')` | PASS 活照干 / `owed=0.2` 且记得来源 / 信任不涨 / 钱没进兜；搬货是老板给，妈不在也当场结 |
+| chore_pay_test | CH-07 | 跨天清次数不清挂账 | 挂账 0.2 后 `day++` | 查次数与挂账 | PASS 今天干过几回清零 / **挂账原样还在** / `takeOwed()` 只能成功一次 |
+| chore_pay_test | CH-08 | 来源 → 付款方 | — | `Chore.payerOf()` 遍历 | PASS 家里的活和期末成绩单是妈 / 瓶子废纸旧课本是老汉 / 跑腿搬货是老板 / `find` 与 `allowance` 没人给 |
+| chore_pay_test | CH-09 | 数钱面额拆分 | — | `breakdown()` 多组取值 | PASS 1.2 → 1+0.2 / 3.7 → 2+1+0.5+0.2 / 拆出来加回去一分不差 / 48.9 也不超过 8 件 |
+| chore_pay_test | CH-10 | 菜单可读性 | 下午（多数活干不了） | 抄 `openMenu` 配置 | PASS 小方桌写着「这会儿有 N 样能干」/ 干活那屏头一行先说妈在不在家 / **干不了的活不置灰**（灰行光标跳不过去就读不到原因）/ 四样活加「不干了」都在 |
+| chore_pay_test | CH-11 | 收钱特写起得来 | 中午，妈在家 | `doChore('dish')` 后推完对话 | PASS 真起一屏特写 / `__interludeOpen > 0` / 站着的是妈且地点是厨房门口 / 钱还没进兜 / 两毛只摆一枚 |
+| chore_pay_test | CH-12 | 一枚一枚数 | 承 CH-11 | 连按 A 直到收起 | PASS 数完正好 +￥0.2 / 账本记着是「刷碗」挣的 / 输入锁解开 |
+| chore_pay_test | CH-13 | 按 B 跳过不丢钱 | 中午，妈在家 | 起特写后按 B 两次 | PASS 一把数完 `got=0.2`、`stage='tail'` / 收起后钱一分不少 |
+| chore_pay_test | CH-14 | 场景被掐掉也不丢钱 | 起特写后 | `scene.stop()` 掉整个客厅 | PASS 钱照样 +￥0.2 / 输入锁解开不卡死 / **不会往销毁掉的控件上写字**（`chars` 为 null 那个 bug 的看门狗） |
+| chore_pay_test | CH-15 | 挂账回来才结 | 中午妈不在家干完活 | 置 `__momHome=true` 再进客厅 | PASS 干完时不起特写（没人在跟前）/ 她一回来就起 / 数完钱进兜且不再欠 |
+| chore_pay_test | CH-16 | 日常事件只记一次账 | 造一个固定 +￥1.2 的 `bottle` 事件 | 走 `dailyCheck()` | PASS 走的是老汉那一屏、金额对 / 今天进账仍是 ￥1.2（`rollEvent` 已记账，特写不许再加） |
+| chore_pay_test | CH-17 | 越看越短 / 字幕排版 | — | 读 `plan()` 与取景框坐标 | PASS 2860 → 1973 → 820ms 且第三遍只剩掏钱三拍 / 取景框横向居中、字幕条整条在屏内 / 台词最长三行且压不到「按 A」那一行 |
+| chore_pay_test | CH-18 | v3 老档迁移 | 写入去掉 `chores` 的 v3 档 | `Save.load()` | PASS 补上 `chores`、`day` 对齐当天、次数与挂账归零、不崩 |
 | flow_test | FL-01 | 主流程全通测试 | 新档，卡带 02 设为脏卡 | 点鞋盒→插卡→开电视→识别故障→去修卡台哈气/划桌→插回→坐下来玩 | ✓ 全流程通（含进入游戏实例检测）。修卡轮数随机 |
 | flow2_test | F2-01 | 集市购买测试 | 钱=60，跳转 Market 场景 | 选老王摊位→选第一张卡→选「就这个价」 | PASS 卡带真的到手了 / 钱扣掉了 |
 | flow2_test | F2-02 | 发小家借卡测试 | 跳转 Friend 场景 | 选发小→选「借一张玩玩」→选指定卡 | PASS 借来的卡带记在存档里（七天后要还）/ 鞋盒还是 12 格 / 借来的卡也躺在鞋盒里 |
@@ -127,13 +145,14 @@
 
 ## 5. 当前通过情况
 
-依据 2026-09-19 实测（本地 http 服务器 + 线上地址）：
+依据 2026-09-21 实测（本地 http 服务器 + 线上地址）：
 
 | 脚本 | 结果 |
 | :--- | :--- |
 | `prologue_test` | **63 过 / 0 败** |
 | `gamekeys_test` | 121 过 / 0 挂（RESET 段带概率，偶发失败先重跑那一段）|
-| `story_core_test` | 80 过 / 0 挂 |
+| `story_core_test` | 85 过 / 0 挂 |
+| `chore_pay_test` | 77 过 / 0 挂（需先手起 `python3 -m http.server 8142`） |
 | `keys_ui_test` | 73 过 / 0 挂 |
 | `move_input_test` | 45 过 / 0 挂 |
 | `systems_test` | 44 过 / 0 挂 |
