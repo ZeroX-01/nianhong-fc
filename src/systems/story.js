@@ -220,7 +220,13 @@
       var gap = this.goalGap(), price = this.goalPrice();
 
       items.push({ label: '今天进账', sub: SB.money(this.todayTotal()), disabled: true });
-      if (!rows.length) items.push({ label: L.none, disabled: true });
+      if (!rows.length) {
+        items.push({ label: L.none, disabled: true });
+        /* 玩家第一次打开账本时还没有流水，这里正好把规则讲清楚。
+         * 有了实际进账以后改看明细，避免菜单超过 11 行。 */
+        items.push({ label: '每天零花', sub: '睡一觉后 ￥0.5', disabled: true });
+        items.push({ label: '日常机会', sub: '瓶子·废纸·跑腿', disabled: true });
+      }
       for (i = 0; i < rows.length && i < 3; i++) {
         items.push({ label: '　' + rows[i].name, sub: SB.money(rows[i].v), disabled: true });
       }

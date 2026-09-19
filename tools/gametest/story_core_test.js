@@ -118,6 +118,10 @@ const PORT = process.env.PORT || '8100';
     ok('心愿单上写着那台二手主机', /二手小旋风主机|二手主机/.test(wishTxt), wishTxt.slice(0, 80));
     ok('心愿单上写着还差多少', /还差/.test(wishTxt));
     ok('心愿单上写着柜子上那台是借的', /借的/.test(wishTxt));
+    ok('没进账时，心愿单直接写明每天五毛怎么拿', /每天零花/.test(wishTxt) && /睡一觉后.*0\.5/.test(wishTxt), wishTxt);
+    ok('没进账时，心愿单直接列出日常挣钱机会', /日常机会/.test(wishTxt) && /瓶子.*废纸.*跑腿/.test(wishTxt), wishTxt);
+    ok('第一次进客厅会讲明攒钱办法', S.L.story.lent.some(x => /每天五毛零花钱/.test(x) && /瓶子/.test(x)));
+    ok('集市钱不够时会告诉玩家下一步', S.L.market.poor.some(x => /睡一觉/.test(x) && /挣钱/.test(x)));
     ok('心愿单上有心情', wish.some(i => i.label === '心情'));
     ok('心愿单只有最后一行能按',
       wish.filter(i => !i.disabled).length === 1 && !wish[wish.length - 1].disabled);
