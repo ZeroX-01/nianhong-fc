@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>pix12 位图字体验证 —— 那年的红白机</title>
+<style>
+  body { background:#181425; color:#c8c0d8; font-family:monospace; margin:0; padding:16px; }
+  h1 { font-size:14px; font-weight:normal; color:#8a7fa8; }
+  canvas { image-rendering: pixelated; display:block; margin-top:12px; border:1px solid #3a3355; }
+  #log { margin-top:12px; font-size:12px; white-space:pre-wrap; color:#7ec850; }
+</style>
+</head>
+<body>
+<h1>原生 canvas 加载 ../assets/font/pix12.png + pix12.xml，逐字绘制，整体放大 3 倍</h1>
+<canvas id="cv"></canvas>
+<div id="log">loading…</div>
+<script>
+const LINES = [
+  "那年的红白机",
+  "把卡带拿出来哈两口气，再在电视桌上划两下。",
+  "零花钱：￥12.5  卡带收藏：7/12  星期三 17:30",
+  "ABCDEFGHIJKLM abcdefghijklm 0123456789 !?,.",
+  "《魂斗萝》《铁甲坦克1990》《超级马里蘑》",
+  "妈妈快回来了！快把游戏机藏起来！",
+  "★零下藏赢躲翻雪 ①②③ ←→↑↓ №1 ℃"
+];
+const SCALE = 3;
+
+async function main() {
+  const xmlText = await (await fetch("../assets/font/pix12.xml")).text();
+  const doc = new DOMParser().parseFromString(xmlText, "text/xml");
+  const common = doc.querySelector("common");
+  const lineHeight = +common.getAttribute("lineHeight");
+  const pageFile = doc.querySelector("page").getAttribute("file");
+
+  const chars = new Map();
+  for (const c of doc.querySelectorAll("chars > char")) {
+    chars.set(+c.getAttribute("id"), {
+      x:+c.getAttribute("x"), y:+c.getAttribute("y"),
+      w:+c.getAttribute("width"), h:+c.getAttribute("height"),
+      xo:+c.getAttribute("xoffset"), yo:+c.getAttribute("yoffset"),
+      xa:+c.getAttribute("xadvance")
+    });
+  }
+
+  const img = new Image();
+  img.src = "../assets/font/" + pageFile;
+  await img.decode();
+
+  // 逻辑画布（1:1 像素），再整体放大 3 倍
+  const padding = 6;
+  let maxW = 0;
+  for (const line of LINES) {
+    let w = 0;
+    for (const ch of line) { const g = chars.get(ch.codePointAt(0)); w += g ? g.xa : 12; }
+    maxW = Math.max(maxW, w);
+  }
+  const LW = maxW + padding * 2;
+  const LH = LINES.length * lineHeight + padding * 2;
+
+  const off = document.createElement("canvas");
+  off.width = LW; off.height = LH;
+  const oc = off.getContext("2d");
+  oc.imageSmoothingEnabled = false;
+  oc.fillStyle = "#181425";
+  oc.fillRect(0, 0, LW, LH);
+
+  let missing = 0, drawn = 0;
+  let y = padding;
+  for (const line of LINES) {
+    let x = padding;
+    for (const ch of line) {
+      const g = chars.get(ch.codePointAt(0));
+      if (!g) { missing++; x += 12; continue; }
+      if (g.w > 0) {
+        oc.drawImage(img, g.x, g.y, g.w, g.h, x + g.xo, y + g.yo, g.w, g.h);
+        drawn++;
+      }
+      x += g.xa;
+    }
+    y += lineHeight;
+  }
+
+  const cv = document.getElementById("cv");
+  cv.width = LW * SCALE; cv.height = LH * SCALE;
+  const ctx = cv.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(off, 0, 0, LW, LH, 0, 0, LW * SCALE, LH * SCALE);
+
+  document.getElementById("log").textContent =
+    `图集 ${img.width}x${img.height} / 字符表 ${chars.size} 个 / lineHeight=${lineHeight} base=${common.getAttribute("base")}\n` +
+    `本页绘制字形 ${drawn} 个，缺字 ${missing} 个（应为 0）`;
+}
+main().catch(e => document.getElementById("log").textContent = "ERROR: " + e);
+</script>
+</body>
+</html>

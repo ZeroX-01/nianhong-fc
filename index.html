@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<!--
+  那年的红白机 / That Year's Famicom
+  一个人写的：程序、美术、音乐、文案　—— 赵学，2026 年夏
+
+  给 2004 年那个下午的自己。电视还热着，卡带还在沙发缝里。
+  （标题屏按 ↑↑↓↓←→←→ 试试）
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#14141c">
+<title>那年的红白机</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23ad2229'/><rect x='3' y='5' width='10' height='6' fill='%23dcdce2'/></svg>">
+<style>
+  :root { color-scheme: dark; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body {
+    width:100%; height:100%; overflow:hidden;
+    background:#0a0a0e;
+    /* 房间外的环境色：老墙的暖灰，避免纯黑的现代感 */
+    background-image: radial-gradient(120% 90% at 50% 42%, #1c1a20 0%, #0d0c10 62%, #060608 100%);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    overscroll-behavior: none;
+  }
+  #game { width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+  #game canvas {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    display:block;
+    /* 让画布本身有一点显像管的存在感 */
+    box-shadow: 0 0 0 1px #2a2730, 0 18px 60px -10px rgba(0,0,0,.85);
+  }
+  /* ---- 载入遮罩：模拟老电视预热 ---- */
+  #boot {
+    position:fixed; inset:0; z-index:50;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+    background:#0a0a0e; color:#c99a6a;
+    font:400 13px/1.9 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing:.14em;
+    transition:opacity .5s ease-out;
+  }
+  #boot.gone { opacity:0; pointer-events:none; }
+  #boot .bar { width:180px; height:6px; background:#1c1a20; border:1px solid #383845; }
+  #boot .bar i { display:block; height:100%; width:0%; background:#ad2229; transition:width .2s linear; }
+  #boot .tip { color:#6d6d80; font-size:11px; letter-spacing:.08em; }
+  #boot .brand { color:#dcdce2; font-size:15px; letter-spacing:.5em; }
+  /* ---- 需要用户手势解锁音频的提示 ---- */
+  #tapstart {
+    position:fixed; inset:0; z-index:40; display:none;
+    align-items:center; justify-content:center; flex-direction:column; gap:14px;
+    background:rgba(6,6,8,.86); color:#e6c49a; cursor:pointer;
+    font:400 14px/2 ui-monospace, monospace; letter-spacing:.22em;
+  }
+  #tapstart.show { display:flex; }
+  #tapstart small { color:#6d6d80; letter-spacing:.1em; font-size:11px; }
+  #fatal {
+    position:fixed; inset:0; z-index:60; display:none; padding:28px;
+    background:#0a0a0e; color:#d93a34; overflow:auto;
+    font:400 12px/1.7 ui-monospace, monospace; white-space:pre-wrap;
+  }
+</style>
+</head>
+<body>
+<div id="game"></div>
+
+<div id="boot">
+  <div class="brand">小 霸 王 的 夏 天</div>
+  <div class="bar"><i id="bootbar"></i></div>
+  <div class="tip" id="boottip">正在预热显像管…</div>
+</div>
+
+<div id="tapstart">
+  <div>点 击 开 机</div>
+  <small>（浏览器需要一次点击才能放出声音）</small>
+</div>
+
+<pre id="fatal"></pre>
+
+<script>
+  // 全局命名空间。刻意不使用模块化 / 打包，减少运行期不确定性。
+  window.SB = { version: '1.0.0' };
+  window.addEventListener('error', function (e) {
+    var el = document.getElementById('fatal');
+    if (!el) return;
+    el.style.display = 'block';
+    el.textContent += '【运行错误】' + (e.message || e) + '\n' + ((e.error && e.error.stack) || '') + '\n\n';
+  });
+</script>
+
+<script src="vendor/phaser.min.js"></script>
+
+<!-- 数据与常量 -->
+<script src="src/core/const.js"></script>
+<script src="src/data/assets.js"></script>
+<script src="src/data/cartridges.js"></script>
+<script src="src/data/lines.js"></script>
+<script src="src/data/story.js"></script>
+<script src="src/data/storyLines.js"></script>
+
+<!-- 核心系统 -->
+<script src="src/core/save.js"></script>
+<script src="src/core/audio.js"></script>
+<script src="src/core/input.js"></script>
+<script src="src/core/text.js"></script>
+<script src="src/core/ui.js"></script>
+<script src="src/core/crt.js"></script>
+
+<!-- 玩法系统 -->
+<script src="src/systems/timeSystem.js"></script>
+<script src="src/systems/economy.js"></script>
+<script src="src/systems/repair.js"></script>
+<script src="src/systems/parent.js"></script>
+<script src="src/systems/rescue.js"></script>
+<script src="src/systems/story.js"></script>
+
+<!-- 小游戏 -->
+<script src="src/games/GameBase.js"></script>
+<script src="src/games/ContraGame.js"></script>
+<script src="src/games/TankGame.js"></script>
+<script src="src/games/MarioGame.js"></script>
+<script src="src/games/FightGame.js"></script>
+<script src="src/games/StubGame.js"></script>
+
+<!-- 电视画面里的按键指引（要在小游戏之后，它认的是 SB.Games 里的构造器） -->
+<script src="src/core/keyguide.js"></script>
+
+<!-- 动作特写（修卡台的哈气 / 划桌，只是表现层，不碰数值） -->
+<script src="src/anim/repairAnim.js"></script>
+<script src="src/anim/prologueArt.js"></script>
+
+<!-- 场景 -->
+<script src="src/scenes/SysScene.js"></script>
+<script src="src/scenes/BootScene.js"></script>
+<script src="src/scenes/TitleScene.js"></script>
+<script src="src/scenes/PrologueScene.js"></script>
+<script src="src/scenes/RoomScene.js"></script>
+<script src="src/scenes/RepairScene.js"></script>
+<script src="src/scenes/ShelfScene.js"></script>
+<script src="src/scenes/MarketScene.js"></script>
+<script src="src/scenes/FriendScene.js"></script>
+<script src="src/scenes/HomeworkScene.js"></script>
+<script src="src/scenes/PlayScene.js"></script>
+<script src="src/scenes/SettingsScene.js"></script>
+<script src="src/scenes/AlbumScene.js"></script>
+
+<script src="src/main.js"></script>
+</body>
+</html>

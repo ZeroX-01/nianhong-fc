@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<!-- 小游戏单独调试台。不参与正式发布，只给开发用。
+     用法：python3 -m http.server 8100 ，然后打开
+       http://localhost:8100/test-game.html?game=tank
+     可选参数：&cart=02  &twoP=1  &nomom=1（关掉妈妈计时，方便安静调试） -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>小游戏调试台</title>
+<style>
+  html,body{margin:0;padding:0;background:#0b0b10;height:100%;overflow:hidden}
+  #game{width:100vw;height:100vh}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:block;margin:0 auto}
+  #err{position:fixed;left:0;top:0;right:0;color:#f88;font:12px/1.5 monospace;background:#200;padding:6px;white-space:pre-wrap;z-index:99;display:none}
+</style>
+</head>
+<body>
+<div id="err"></div>
+<div id="game"></div>
+
+<script src="vendor/phaser.min.js"></script>
+<script src="src/core/const.js"></script>
+<script src="src/data/assets.js"></script>
+<script src="src/data/cartridges.js"></script>
+<script src="src/data/lines.js"></script>
+<script src="src/data/story.js"></script>
+<script src="src/data/storyLines.js"></script>
+<script src="src/core/save.js"></script>
+<script src="src/core/audio.js"></script>
+<script src="src/core/input.js"></script>
+<script src="src/core/text.js"></script>
+<script src="src/core/ui.js"></script>
+<script src="src/core/crt.js"></script>
+<script src="src/systems/timeSystem.js"></script>
+<script src="src/systems/economy.js"></script>
+<script src="src/systems/repair.js"></script>
+<script src="src/systems/parent.js"></script>
+<script src="src/systems/story.js"></script>
+<script src="src/games/GameBase.js"></script>
+<script src="src/games/StubGame.js"></script>
+<script src="src/games/ContraGame.js"></script>
+<script src="src/games/TankGame.js"></script>
+<script src="src/games/MarioGame.js"></script>
+<script src="src/games/FightGame.js"></script>
+<script src="src/core/keyguide.js"></script>
+<script src="src/scenes/PlayScene.js"></script>
+
+<script>
+(function () {
+  'use strict';
+  var q = new URLSearchParams(location.search);
+  var GAME = q.get('game') || 'tank';
+  var CART = q.get('cart') || '02';
+  var errBox = document.getElementById('err');
+  window.__errors = [];
+  function showErr(msg) {
+    window.__errors.push(msg);
+    errBox.style.display = 'block';
+    errBox.textContent = window.__errors.join('\n');
+  }
+  window.onerror = function (m, s, l, c, e) { showErr('[error] ' + m + ' @' + s + ':' + l + (e && e.stack ? '\n' + e.stack : '')); };
+  window.addEventListener('unhandledrejection', function (e) { showErr('[reject] ' + e.reason); });
+
+  /* 调试台里不弹音频（浏览器未交互时会被拦），但保留调用链 */
+  SB.Save.load();
+  SB.Save.d.carts[CART].owned = true;
+  SB.Save.d.inserted = CART;
+  SB.Save.d.tvOn = true;
+  if (q.get('nomom')) SB.Save.d.__nomom = true;
+
+  /* 只加载存在的资源；缺失的靠 loaderror 静默跳过 */
+  var Boot = new Phaser.Class({
+    Extends: Phaser.Scene,
+    initialize: function Boot() { Phaser.Scene.call(this, { key: 'Boot' }); },
+    preload: function () {
+      var self = this, B = SB.ASSETS.imgBase;
+      this.load.on('loaderror', function (f) { console.warn('missing asset: ' + f.key); });
+      this.load.bitmapFont('pix12', 'assets/font/pix12.png', 'assets/font/pix12.xml');
+      this.load.bitmapFont('pix16', 'assets/font/pix16.png', 'assets/font/pix16.xml');
+      (SB.ASSETS.images || []).forEach(function (a) { self.load.image(a.key, B + a.path); });
+      (SB.ASSETS.sheets || []).forEach(function (a) {
+        self.load.spritesheet(a.key, B + a.path, { frameWidth: a.w, frameHeight: a.h });
+      });
+      SB.Audio.queue(this.load);
+    },
+    create: function () {
+      SB.Audio.init(this.game);
+      SB.Input.init(this.game);
+      this.scene.start('Play', { cartId: CART, gameKey: GAME, twoP: !!q.get('twoP'), friend: !!q.get('nomom') });
+    }
+  });
+
+  /* 退出游戏时的落点，避免 scene.start('Room') 报错 */
+  var Room = new Phaser.Class({
+    Extends: Phaser.Scene,
+    initialize: function Room() { Phaser.Scene.call(this, { key: 'Room' }); },
+    create: function () {
+      this.add.rectangle(0, 0, SB.W, SB.H, 0x101018).setOrigin(0, 0);
+      SB.Text.add(this, 20, 20, '（调试台：已退出游戏。刷新页面重开）', 12, 0xffffff);
+    }
+  });
+  var Friend = new Phaser.Class({
+    Extends: Phaser.Scene,
+    initialize: function Friend() { Phaser.Scene.call(this, { key: 'Friend' }); },
+    create: function () {
+      this.add.rectangle(0, 0, SB.W, SB.H, 0x181018).setOrigin(0, 0);
+      SB.Text.add(this, 20, 20, '（调试台：发小家占位）', 12, 0xffffff);
+    }
+  });
+
+  function boot() { new Phaser.Game({
+    type: Phaser.AUTO,
+    parent: 'game',
+    width: SB.W, height: SB.H,
+    pixelArt: true, roundPixels: true,
+    backgroundColor: '#000000',
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    audio: { disableWebAudio: false },
+    scene: [Boot, SB.PlayScene, Room, Friend]
+  }); }
+  SB.Audio.fetchManifest().then(boot, boot);
+})();
+</script>
+</body>
+</html>

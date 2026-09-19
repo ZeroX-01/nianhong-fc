@@ -1,0 +1,34 @@
+# 打包产物
+dist/
+dist_pack/
+
+# Python
+__pycache__/
+*.pyc
+
+# 测试脚本跑出来的截图与中间产物
+tools/_tmp_audio/
+tools/gametest/bugfix/
+tools/gametest/contra/
+tools/gametest/deployed/
+tools/gametest/fight/
+tools/gametest/flow/
+tools/gametest/flow2/
+tools/gametest/flow3/
+tools/gametest/gamekeys/
+tools/gametest/keys_ui/
+tools/gametest/move_input/
+tools/gametest/outer/
+tools/gametest/play/
+tools/gametest/prologue/
+tools/gametest/repair_anim/
+tools/gametest/rescue/
+tools/gametest/settings/
+tools/gametest/staff/
+tools/gametest/*.png
+
+# 编辑器 / 系统
+.DS_Store
+.vscode/
+.idea/
+node_modules/

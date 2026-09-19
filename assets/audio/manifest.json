@@ -1,0 +1,439 @@
+{
+  "sfx": [
+    {
+      "key": "ui_move",
+      "file": "sfx/ui_move",
+      "duration": 0.06,
+      "volume": 0.5
+    },
+    {
+      "key": "ui_confirm",
+      "file": "sfx/ui_confirm",
+      "duration": 0.14,
+      "volume": 0.6
+    },
+    {
+      "key": "ui_cancel",
+      "file": "sfx/ui_cancel",
+      "duration": 0.12,
+      "volume": 0.5
+    },
+    {
+      "key": "ui_error",
+      "file": "sfx/ui_error",
+      "duration": 0.2,
+      "volume": 0.6
+    },
+    {
+      "key": "tv_power_on",
+      "file": "sfx/tv_power_on",
+      "duration": 1.1,
+      "volume": 0.85
+    },
+    {
+      "key": "tv_power_off",
+      "file": "sfx/tv_power_off",
+      "duration": 0.7,
+      "volume": 0.8
+    },
+    {
+      "key": "tv_static",
+      "file": "sfx/tv_static",
+      "duration": 2.0,
+      "volume": 0.35,
+      "loop": true
+    },
+    {
+      "key": "tv_hum",
+      "file": "sfx/tv_hum",
+      "duration": 3.0,
+      "volume": 0.3,
+      "loop": true
+    },
+    {
+      "key": "tv_degauss",
+      "file": "sfx/tv_degauss",
+      "duration": 0.5,
+      "volume": 0.85
+    },
+    {
+      "key": "cart_insert",
+      "file": "sfx/cart_insert",
+      "duration": 0.22,
+      "volume": 0.8
+    },
+    {
+      "key": "cart_remove",
+      "file": "sfx/cart_remove",
+      "duration": 0.2,
+      "volume": 0.75
+    },
+    {
+      "key": "cart_blow",
+      "file": "sfx/cart_blow",
+      "duration": 0.9,
+      "volume": 0.9
+    },
+    {
+      "key": "cart_rub",
+      "file": "sfx/cart_rub",
+      "duration": 0.55,
+      "volume": 0.9
+    },
+    {
+      "key": "cart_tap",
+      "file": "sfx/cart_tap",
+      "duration": 0.1,
+      "volume": 0.75
+    },
+    {
+      "key": "cart_dirty_fail",
+      "file": "sfx/cart_dirty_fail",
+      "duration": 0.6,
+      "volume": 0.9
+    },
+    {
+      "key": "console_power",
+      "file": "sfx/console_power",
+      "duration": 0.15,
+      "volume": 0.8
+    },
+    {
+      "key": "console_reset",
+      "file": "sfx/console_reset",
+      "duration": 0.1,
+      "volume": 0.7
+    },
+    {
+      "key": "boot_jingle",
+      "file": "sfx/boot_jingle",
+      "duration": 1.4,
+      "volume": 0.9
+    },
+    {
+      "key": "glitch_burst",
+      "file": "sfx/glitch_burst",
+      "duration": 0.4,
+      "volume": 0.85
+    },
+    {
+      "key": "coin_get",
+      "file": "sfx/coin_get",
+      "duration": 0.18,
+      "volume": 0.75
+    },
+    {
+      "key": "money_get",
+      "file": "sfx/money_get",
+      "duration": 0.5,
+      "volume": 0.8
+    },
+    {
+      "key": "buy_success",
+      "file": "sfx/buy_success",
+      "duration": 0.7,
+      "volume": 0.85
+    },
+    {
+      "key": "buy_fail",
+      "file": "sfx/buy_fail",
+      "duration": 0.4,
+      "volume": 0.75
+    },
+    {
+      "key": "haggle_ok",
+      "file": "sfx/haggle_ok",
+      "duration": 0.3,
+      "volume": 0.75
+    },
+    {
+      "key": "haggle_no",
+      "file": "sfx/haggle_no",
+      "duration": 0.35,
+      "volume": 0.7
+    },
+    {
+      "key": "footstep_stair",
+      "file": "sfx/footstep_stair",
+      "duration": 1.6,
+      "volume": 0.9
+    },
+    {
+      "key": "door_key",
+      "file": "sfx/door_key",
+      "duration": 0.8,
+      "volume": 0.8
+    },
+    {
+      "key": "door_open",
+      "file": "sfx/door_open",
+      "duration": 0.9,
+      "volume": 0.85
+    },
+    {
+      "key": "door_close",
+      "file": "sfx/door_close",
+      "duration": 0.35,
+      "volume": 0.9
+    },
+    {
+      "key": "heartbeat",
+      "file": "sfx/heartbeat",
+      "duration": 1.0,
+      "volume": 0.8,
+      "loop": true
+    },
+    {
+      "key": "mom_angry",
+      "file": "sfx/mom_angry",
+      "duration": 0.8,
+      "volume": 0.9
+    },
+    {
+      "key": "caught_sting",
+      "file": "sfx/caught_sting",
+      "duration": 1.3,
+      "volume": 0.95
+    },
+    {
+      "key": "hide_success",
+      "file": "sfx/hide_success",
+      "duration": 0.5,
+      "volume": 0.7
+    },
+    {
+      "key": "pencil_write",
+      "file": "sfx/pencil_write",
+      "duration": 0.7,
+      "volume": 0.55,
+      "loop": true
+    },
+    {
+      "key": "cicada",
+      "file": "sfx/cicada",
+      "duration": 4.0,
+      "volume": 0.3,
+      "loop": true
+    },
+    {
+      "key": "fan_hum",
+      "file": "sfx/fan_hum",
+      "duration": 2.5,
+      "volume": 0.35,
+      "loop": true
+    },
+    {
+      "key": "fish_bubble",
+      "file": "sfx/fish_bubble",
+      "duration": 0.3,
+      "volume": 0.6
+    },
+    {
+      "key": "popsicle_eat",
+      "file": "sfx/popsicle_eat",
+      "duration": 0.4,
+      "volume": 0.75
+    },
+    {
+      "key": "bike_bell",
+      "file": "sfx/bike_bell",
+      "duration": 0.6,
+      "volume": 0.8
+    },
+    {
+      "key": "market_crowd",
+      "file": "sfx/market_crowd",
+      "duration": 4.0,
+      "volume": 0.3,
+      "loop": true
+    },
+    {
+      "key": "jump",
+      "file": "sfx/jump",
+      "duration": 0.2,
+      "volume": 0.7
+    },
+    {
+      "key": "shoot",
+      "file": "sfx/shoot",
+      "duration": 0.09,
+      "volume": 0.6
+    },
+    {
+      "key": "explosion_s",
+      "file": "sfx/explosion_s",
+      "duration": 0.35,
+      "volume": 0.9
+    },
+    {
+      "key": "explosion_l",
+      "file": "sfx/explosion_l",
+      "duration": 0.7,
+      "volume": 1.0
+    },
+    {
+      "key": "hit",
+      "file": "sfx/hit",
+      "duration": 0.12,
+      "volume": 0.8
+    },
+    {
+      "key": "powerup",
+      "file": "sfx/powerup",
+      "duration": 0.6,
+      "volume": 0.8
+    },
+    {
+      "key": "player_die",
+      "file": "sfx/player_die",
+      "duration": 1.2,
+      "volume": 0.9
+    },
+    {
+      "key": "stage_clear",
+      "file": "sfx/stage_clear",
+      "duration": 2.2,
+      "volume": 0.9
+    },
+    {
+      "key": "extra_life",
+      "file": "sfx/extra_life",
+      "duration": 0.9,
+      "volume": 0.85
+    },
+    {
+      "key": "tank_move",
+      "file": "sfx/tank_move",
+      "duration": 1.0,
+      "volume": 0.5,
+      "loop": true
+    },
+    {
+      "key": "tank_fire",
+      "file": "sfx/tank_fire",
+      "duration": 0.15,
+      "volume": 0.9
+    },
+    {
+      "key": "brick_break",
+      "file": "sfx/brick_break",
+      "duration": 0.2,
+      "volume": 0.8
+    },
+    {
+      "key": "steel_hit",
+      "file": "sfx/steel_hit",
+      "duration": 0.18,
+      "volume": 0.7
+    },
+    {
+      "key": "base_destroyed",
+      "file": "sfx/base_destroyed",
+      "duration": 1.8,
+      "volume": 1.0
+    },
+    {
+      "key": "punch",
+      "file": "sfx/punch",
+      "duration": 0.13,
+      "volume": 0.85
+    },
+    {
+      "key": "kick",
+      "file": "sfx/kick",
+      "duration": 0.16,
+      "volume": 0.9
+    },
+    {
+      "key": "block",
+      "file": "sfx/block",
+      "duration": 0.12,
+      "volume": 0.7
+    },
+    {
+      "key": "ko",
+      "file": "sfx/ko",
+      "duration": 1.6,
+      "volume": 1.0
+    }
+  ],
+  "bgm": [
+    {
+      "key": "bgm_title",
+      "file": "bgm/bgm_title",
+      "duration": 30.0,
+      "loop": true,
+      "volume": 0.45
+    },
+    {
+      "key": "bgm_room",
+      "file": "bgm/bgm_room",
+      "duration": 32.0,
+      "loop": true,
+      "volume": 0.42
+    },
+    {
+      "key": "bgm_market",
+      "file": "bgm/bgm_market",
+      "duration": 28.0,
+      "loop": true,
+      "volume": 0.42
+    },
+    {
+      "key": "bgm_friend",
+      "file": "bgm/bgm_friend",
+      "duration": 26.0,
+      "loop": true,
+      "volume": 0.42
+    },
+    {
+      "key": "bgm_tense",
+      "file": "bgm/bgm_tense",
+      "duration": 16.0,
+      "loop": true,
+      "volume": 0.5
+    },
+    {
+      "key": "bgm_contra",
+      "file": "bgm/bgm_contra",
+      "duration": 30.0,
+      "loop": true,
+      "volume": 0.45
+    },
+    {
+      "key": "bgm_tank",
+      "file": "bgm/bgm_tank",
+      "duration": 28.0,
+      "loop": true,
+      "volume": 0.42
+    },
+    {
+      "key": "bgm_mario",
+      "file": "bgm/bgm_mario",
+      "duration": 26.0,
+      "loop": true,
+      "volume": 0.42
+    },
+    {
+      "key": "bgm_fight",
+      "file": "bgm/bgm_fight",
+      "duration": 28.0,
+      "loop": true,
+      "volume": 0.45
+    },
+    {
+      "key": "bgm_gameover",
+      "file": "bgm/bgm_gameover",
+      "duration": 5.0,
+      "loop": false,
+      "volume": 0.5
+    },
+    {
+      "key": "bgm_ending",
+      "file": "bgm/bgm_ending",
+      "duration": 40.0,
+      "loop": true,
+      "volume": 0.45
+    }
+  ]
+}
