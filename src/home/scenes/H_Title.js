@@ -69,6 +69,7 @@
       if (saveExists) items.push({ label: '继续', sub: this.chapterLabel(d.chapter), value: 'continue' });
       items.push({ label: saveExists ? '重新过这一晚' : '开始这一晚', value: 'new' });
       items.push({ label: '关于这个样片', value: 'about' });
+      items.push({ label: '语音：' + (SB.HVoice.enabled ? '开' : '关'), value: 'voice' });
 
       this.menu = SB.UI.menu(this, {
         title: '回家吃饭',
@@ -109,6 +110,11 @@
         SB.UI.dialog(this, SB.HL.title.about, {
           onDone: function () { self.buildMenu(); }
         });
+        return;
+      }
+      if (v === 'voice') {
+        SB.HVoice.toggle();
+        this.buildMenu();
       }
     },
 

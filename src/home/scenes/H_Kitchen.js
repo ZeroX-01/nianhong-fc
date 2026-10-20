@@ -23,6 +23,7 @@
       this.stage = SB.Text.add(this, 14, 8, '第二幕 · 厨房', 12, 0x6d6d80);
       this.timeLabel = SB.Text.add(this, SB.W - 14, 8, '20:50', 12, 0x92929f).setOrigin(1, 0);
 
+      this.events.once('shutdown', function () { SB.HVoice.stop(); });
       SB.UI.fadeIn(this, 320);
       this.time.delayedCall(340, function () { self.door(); });
     },
@@ -68,8 +69,12 @@
     /* ---------------- 节拍 ---------------- */
     door: function () {
       var self = this;
+      SB.HVoice.play('mom_door');
       SB.UI.dialog(this, SB.HL.kitchen.door, {
-        onDone: function () { self.living(); }
+        onDone: function () {
+          SB.HVoice.stop();
+          self.living();
+        }
       });
     },
 
@@ -200,8 +205,10 @@
     dinner: function () {
       var self = this;
       this.timeLabel.setText('21:30');
+      SB.HVoice.play('mom_dinner');
       SB.UI.dialog(this, SB.HL.kitchen.dinner, {
         onDone: function () {
+          SB.HVoice.stop();
           SB.HomeSave.setChapter('table');
           self.leaving = true;
           SB.UI.go(self, 'HTable', { from: 'kitchen' });

@@ -20,6 +20,7 @@
       this.stage = SB.Text.add(this, 14, 8, '第三幕 · 饭桌', 12, 0x6d6d80);
       this.timeLabel = SB.Text.add(this, SB.W - 14, 8, '21:30', 12, 0x92929f).setOrigin(1, 0);
 
+      this.events.once('shutdown', function () { SB.HVoice.stop(); });
       SB.UI.fadeIn(this, 320);
       this.time.delayedCall(360, function () { self.opening(); });
     },
@@ -243,7 +244,13 @@
               if (it.value === 'answer') {
                 SB.HomeSave.d.phone++;
                 SB.HomeSave.save();
-                SB.UI.dialog(self, SB.HL.table.callAnswer, { onDone: function () { self.stay(); } });
+                SB.HVoice.play('boss_call');
+                SB.UI.dialog(self, SB.HL.table.callAnswer, {
+                  onDone: function () {
+                    SB.HVoice.stop();
+                    self.stay();
+                  }
+                });
                 return;
               }
               if (it.value === 'off') {

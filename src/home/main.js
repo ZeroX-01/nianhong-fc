@@ -4,6 +4,7 @@
   'use strict';
 
   SB.HomeSave.load();
+  SB.HVoice.init();
 
   var cfg = {
     type: Phaser.AUTO,

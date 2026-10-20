@@ -22,6 +22,7 @@
       this.stage = SB.Text.add(this, 14, 8, '第一幕 · 末班车', 12, 0x6d6d80);
       this.timeLabel = SB.Text.add(this, SB.W - 14, 8, '18:42', 12, 0x92929f).setOrigin(1, 0);
 
+      this.events.once('shutdown', function () { SB.HVoice.stop(); });
       SB.UI.fadeIn(this, 320);
       this.time.delayedCall(360, function () { self.intro(); });
     },
@@ -128,8 +129,12 @@
 
     voice: function () {
       var self = this;
+      SB.HVoice.play('mom_msg');
       SB.UI.dialog(this, SB.HL.bus.voice, {
-        onDone: function () { self.replyMenu(); }
+        onDone: function () {
+          SB.HVoice.stop();
+          self.replyMenu();
+        }
       });
     },
 
