@@ -32,6 +32,9 @@
       this.midFaultT = 0;
       this.rescueOn = false;       // 正在抢救那几秒
       this.judgeT = 0;             // 判定字还留在屏上多久
+      /* 上一次花屏的锁不能带到下一次进场：Phaser 会复用同一个 Scene 实例，
+       * 不清的话「花屏 → 回客厅 → 再进 Play」的新对局永远不 update。 */
+      this.faulting = false;
     },
 
     create: function () {

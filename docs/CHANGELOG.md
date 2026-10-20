@@ -22,6 +22,16 @@
 
 验证：`python3 tools/gen_ui.py` 连续跑两次输出 sha256 一致；`python3 tools/check_words.py` 通过；本地首页标题与开机遮罩均为「那年的红白机」，0 个 JS 报错。
 
+### 修掉三个会卡住玩法的问题 · 存档版本 4
+
+这一轮只动三处，都是「不改数值、只改状态」的修复。
+
+**花屏一次后新对局卡死。** `PlayScene.init()` 没有复位 `faulting`，而 Phaser 会复用 Scene 实例。花屏 → 回客厅 → 再进 Play 时，`update()` 里的 `if (this.game_ && !this.faulting)` 永远为假，新开的对局有画面但不跑。现在 `init()` 里补 `this.faulting = false`。验证：触发一次 `midFault`，回客厅后再进 Play，`game_.t` 持续增长。
+
+**魂斗萝跳跃被吞。** `ContraGame.moveY()` 的下落扫描上界是 `floor((e.y-1)/TS)`，角色正好站在地面上时这个值比脚下那一行小，循环一次都不跑，`onGround` 被误置 false。60fps 下只有约三分之一的帧能起跳。现在 `re = max(rs, ...)`，至少把脚下这一行纳入扫描。验证：站着 120 帧 `onGround` 120/120 为真；按跳后 `y` 从 208 到 175，起跳正常。
+
+**砍价「行，X 就 X」永远不成交。** `Econ.offer()` 的 `counter = (v + floor) / 2` 恒小于底价，玩家接受摊主报价后仍按低价处理，耐心扣光就谈崩。现在 `counter = max(floor, ...)`，摊主报出的就是他能接受的最低价。验证：12 张卡逐一用「低于底价 → 接受 counter」的路径，12/12 成交；直接出底价成交；过低还价仍然谈崩。
+
 ---
 
 ## 2026-09-21

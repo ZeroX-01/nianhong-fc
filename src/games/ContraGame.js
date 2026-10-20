@@ -484,8 +484,12 @@
     var c0 = Math.floor((b.x + 1) / TS), c1 = Math.floor((b.x + b.w - 2) / TS);
     var r, c;
     if (dy >= 0) {
-      /* 下落：从上一帧的脚底所在行扫到这一帧，避免高速穿板 */
-      var rs = Math.floor(prevBottom / TS), re = Math.floor((e.y - 1) / TS);
+      /* 下落：从上一帧的脚底所在行扫到这一帧，避免高速穿板。
+       * re 至少要和 rs 相等：站着不动时 e.y 只涨一点点，floor((e.y-1)/TS)
+       * 会比脚下那一行还小，循环一次都不跑，onGround 被误置 false，
+       * 60fps 下跳跃输入就会被吞掉大半。 */
+      var rs = Math.floor(prevBottom / TS);
+      var re = Math.max(rs, Math.floor((e.y - 1) / TS));
       for (r = rs; r <= re; r++) {
         for (c = c0; c <= c1; c++) {
           var landSolid = this.solid(c, r);

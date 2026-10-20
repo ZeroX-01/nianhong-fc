@@ -62,7 +62,10 @@
       /* 差一点点：摊主反过来要一个中间价 */
       if (v >= h.floor * 0.93) {
         h.patience--;
-        var counter = Math.round(((v + h.floor) / 2) * 10) / 10;
+        /* 摊主还的价不能低于自己的底价：否则玩家选「行，X 就 X」时，
+         * offer() 又按低价处理，耐心扣光后永远谈崩。floor 在 newHaggle
+         * 里已经是一位小数，取 max 后 counter 就是他能接受的最低价。 */
+        var counter = Math.max(h.floor, Math.round(((v + h.floor) / 2) * 10) / 10);
         h.counter = counter;
         if (h.patience <= 0) {
           h.done = true; h.deal = 0;
