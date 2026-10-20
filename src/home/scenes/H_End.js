@@ -15,18 +15,23 @@
     create: function () {
       var self = this, W = SB.W, H = SB.H;
       this.cameras.main.setBackgroundColor('#07070a');
+      if (this.textures.exists('home_living')) {
+        this.add.image(0, 0, 'home_living').setOrigin(0, 0);
+        this.add.rectangle(0, 0, W, H, 0x0a0a12, 0.62).setOrigin(0, 0);
+      } else {
       this.add.rectangle(0, 0, W, H, 0x0a0a0e).setOrigin(0, 0);
-      /* 窗、月亮、桌子：和标题同一间屋子 */
-      this.add.rectangle(330, 26, 118, 104, 0x0c1832).setOrigin(0, 0);
-      this.add.rectangle(330, 26, 118, 104).setOrigin(0, 0).setStrokeStyle(3, 0x2a1a10);
-      this.add.circle(410, 58, 15, 0xf5db6e);
-      this.add.circle(404, 53, 13, 0x0c1832);
-      this.add.rectangle(0, 196, W, 74, 0x1c1a20).setOrigin(0, 0);
-      this.add.rectangle(36, 196, 408, 6, 0x2a1a10).setOrigin(0, 0);
-      this.add.circle(150, 190, 10, 0xdcdce2);
-      this.add.circle(150, 190, 7, 0x24242f);
-      this.add.circle(330, 190, 10, 0xdcdce2);
-      this.add.circle(330, 190, 7, 0x24242f);
+        /* 窗、月亮、桌子：和标题同一间屋子 */
+        this.add.rectangle(330, 26, 118, 104, 0x0c1832).setOrigin(0, 0);
+        this.add.rectangle(330, 26, 118, 104).setOrigin(0, 0).setStrokeStyle(3, 0x2a1a10);
+        this.add.circle(410, 58, 15, 0xf5db6e);
+        this.add.circle(404, 53, 13, 0x0c1832);
+        this.add.rectangle(0, 196, W, 74, 0x1c1a20).setOrigin(0, 0);
+        this.add.rectangle(36, 196, 408, 6, 0x2a1a10).setOrigin(0, 0);
+        this.add.circle(150, 190, 10, 0xdcdce2);
+        this.add.circle(150, 190, 7, 0x24242f);
+        this.add.circle(330, 190, 10, 0xdcdce2);
+        this.add.circle(330, 190, 7, 0x24242f);
+      }
 
       var title = SB.Text.add(this, W / 2, 30, '回家吃饭', 16, 0xe0b422).setOrigin(0.5, 0).setScale(2);
       var tag = SB.Text.add(this, W / 2, 74, this.tagOf(this.ending), 12, 0x92929f).setOrigin(0.5, 0);

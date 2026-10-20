@@ -11,6 +11,8 @@
 浏览器直接打开就能玩。没有构建步骤，没有账号，存档在 localStorage 里。
 **在线试玩：<https://zerox-01.github.io/nianhong-fc/>**（手机也能玩，会自动出虚拟十字键）
 
+**续篇样片《回家吃饭》（实验）：<https://zerox-01.github.io/nianhong-fc/home.html>**（10–15 分钟，占位美术 + TTS 语音）
+
 > 版本现状：这个仓库就是 v1 的全部源码，没有构建步骤，克隆下来起个静态服务器就能玩。
 
 ---

@@ -9,6 +9,17 @@
     preload: function () {
       this.load.bitmapFont('pix12', 'assets/font/pix12.png', 'assets/font/pix12.xml');
       this.load.bitmapFont('pix16', 'assets/font/pix16.png', 'assets/font/pix16.xml');
+      var imgs = {
+        home_office: 'bg_office.png',
+        home_bus: 'bg_bus.png',
+        home_station: 'bg_station.png',
+        home_living: 'bg_living.png',
+        home_kitchen: 'bg_kitchen.png',
+        home_table: 'bg_table.png'
+      };
+      for (var k in imgs) {
+        if (Object.prototype.hasOwnProperty.call(imgs, k)) this.load.image(k, 'assets/home/' + imgs[k]);
+      }
     },
 
     create: function () {

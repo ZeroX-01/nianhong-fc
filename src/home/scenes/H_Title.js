@@ -12,28 +12,33 @@
       this.leaving = false;
 
       this.cameras.main.setBackgroundColor('#0a0a0e');
+      if (this.textures.exists('home_living')) {
+        this.add.image(0, 0, 'home_living').setOrigin(0, 0);
+        this.add.rectangle(0, 0, W, H, 0x0a0a12, 0.58).setOrigin(0, 0);
+      } else {
       this.add.rectangle(0, 0, W, H, 0x14141c).setOrigin(0, 0);
-      /* 地板 */
-      this.add.rectangle(0, 190, W, 80, 0x2a1a10).setOrigin(0, 0);
-      this.add.rectangle(0, 190, W, 2, 0x46291a).setOrigin(0, 0);
-      /* 窗 */
-      this.add.rectangle(318, 26, 130, 116, 0x0c1832).setOrigin(0, 0);
-      this.add.rectangle(318, 26, 130, 116).setOrigin(0, 0).setStrokeStyle(3, 0x46291a);
-      this.add.circle(404, 60, 17, 0xf5db6e);
-      this.add.circle(398, 55, 15, 0x0c1832);
-      this.add.rectangle(382, 26, 3, 116, 0x46291a).setOrigin(0, 0);
-      this.add.rectangle(318, 82, 130, 3, 0x46291a).setOrigin(0, 0);
-      /* 桌 */
-      this.add.rectangle(34, 196, 412, 8, 0x63402a).setOrigin(0, 0);
-      this.add.rectangle(48, 204, 8, 54, 0x46291a).setOrigin(0, 0);
-      this.add.rectangle(424, 204, 8, 54, 0x46291a).setOrigin(0, 0);
-      /* 两副碗筷：一副有人，一副空着 */
-      this.add.circle(150, 190, 11, 0xdcdce2);
-      this.add.circle(150, 190, 8, 0x24242f);
-      this.add.circle(330, 190, 11, 0xdcdce2);
-      this.add.circle(330, 190, 8, 0x24242f);
-      this.add.rectangle(146, 180, 3, 18, 0xa8764c).setOrigin(0, 0).setAngle(20);
-      this.add.rectangle(326, 180, 3, 18, 0xa8764c).setOrigin(0, 0).setAngle(20);
+        /* 地板 */
+        this.add.rectangle(0, 190, W, 80, 0x2a1a10).setOrigin(0, 0);
+        this.add.rectangle(0, 190, W, 2, 0x46291a).setOrigin(0, 0);
+        /* 窗 */
+        this.add.rectangle(318, 26, 130, 116, 0x0c1832).setOrigin(0, 0);
+        this.add.rectangle(318, 26, 130, 116).setOrigin(0, 0).setStrokeStyle(3, 0x46291a);
+        this.add.circle(404, 60, 17, 0xf5db6e);
+        this.add.circle(398, 55, 15, 0x0c1832);
+        this.add.rectangle(382, 26, 3, 116, 0x46291a).setOrigin(0, 0);
+        this.add.rectangle(318, 82, 130, 3, 0x46291a).setOrigin(0, 0);
+        /* 桌 */
+        this.add.rectangle(34, 196, 412, 8, 0x63402a).setOrigin(0, 0);
+        this.add.rectangle(48, 204, 8, 54, 0x46291a).setOrigin(0, 0);
+        this.add.rectangle(424, 204, 8, 54, 0x46291a).setOrigin(0, 0);
+        /* 两副碗筷：一副有人，一副空着 */
+        this.add.circle(150, 190, 11, 0xdcdce2);
+        this.add.circle(150, 190, 8, 0x24242f);
+        this.add.circle(330, 190, 11, 0xdcdce2);
+        this.add.circle(330, 190, 8, 0x24242f);
+        this.add.rectangle(146, 180, 3, 18, 0xa8764c).setOrigin(0, 0).setAngle(20);
+        this.add.rectangle(326, 180, 3, 18, 0xa8764c).setOrigin(0, 0).setAngle(20);
+      }
 
       /* 标题 */
       var tx = W / 2;
@@ -44,7 +49,7 @@
       shadow.setAlpha(0); title.setAlpha(0);
       this.tweens.add({ targets: [shadow, title], alpha: 1, duration: 900, ease: 'Quad.easeOut' });
 
-      var sub = SB.Text.add(this, tx, 96, SB.HL.title.sub, 12, 0x92929f)
+      var sub = SB.Text.add(this, tx, 96, SB.HL.title.sub, 12, 0xe6c49a)
         .setOrigin(0.5, 0).setAlpha(0);
       this.tweens.add({ targets: sub, alpha: 1, delay: 500, duration: 800 });
 

@@ -20,8 +20,9 @@
       var self = this;
       this.cameras.main.setBackgroundColor('#100e12');
       this.drawRoom();
-      this.stage = SB.Text.add(this, 14, 8, '第二幕 · 厨房', 12, 0x6d6d80);
-      this.timeLabel = SB.Text.add(this, SB.W - 14, 8, '20:50', 12, 0x92929f).setOrigin(1, 0);
+      this.add.rectangle(0, 0, SB.W, 20, 0x000000, 0.62).setOrigin(0, 0);
+      this.stage = SB.Text.add(this, 14, 8, '第二幕 · 厨房', 12, 0xdcdce2);
+      this.timeLabel = SB.Text.add(this, SB.W - 14, 8, '20:50', 12, 0xf5db6e).setOrigin(1, 0);
 
       this.events.once('shutdown', function () { SB.HVoice.stop(); });
       SB.UI.fadeIn(this, 320);
@@ -29,41 +30,27 @@
     },
 
     drawRoom: function () {
-      var W = SB.W, H = SB.H;
-      var g = this.add.graphics();
-      /* 墙 + 地 */
-      g.fillStyle(0x24242f, 1); g.fillRect(0, 0, W, H);
-      g.fillStyle(0x2a1a10, 1); g.fillRect(0, 196, W, 74);
-      g.fillStyle(0x46291a, 1); g.fillRect(0, 196, W, 4);
-      /* 窗 + 月亮 */
-      g.fillStyle(0x0c1832, 1); g.fillRect(34, 38, 112, 92);
-      g.lineStyle(3, 0x46291a, 1); g.strokeRect(34, 38, 112, 92);
-      g.fillStyle(0x46291a, 1); g.fillRect(88, 38, 3, 92);
-      g.fillRect(34, 82, 112, 3);
-      this.add.circle(112, 62, 13, 0xf5db6e);
-      this.add.circle(106, 57, 11, 0x0c1832);
-      /* 衣柜（左边） */
-      g.fillStyle(0x46291a, 1); g.fillRect(360, 24, 96, 128);
-      g.lineStyle(2, 0x2a1a10, 1); g.strokeRect(360, 24, 96, 128);
-      g.fillStyle(0x63402a, 1); g.fillRect(364, 28, 88, 120);
-      g.lineStyle(1, 0x46291a, 1); g.strokeRect(404, 28, 1, 120);
-      /* 衣柜顶上的纸箱 */
-      g.fillStyle(0x85583a, 1); g.fillRect(372, 10, 62, 16);
-      g.lineStyle(1, 0x46291a, 1); g.strokeRect(372, 10, 62, 16);
-      /* 灶台 + 锅 */
-      g.fillStyle(0x383845, 1); g.fillRect(160, 136, 150, 60);
-      g.fillStyle(0x4f4f60, 1); g.fillRect(160, 136, 150, 4);
-      g.fillStyle(0x24242f, 1); g.fillRect(178, 116, 42, 22);
-      g.fillStyle(0x6d6d80, 1); g.fillRect(182, 112, 34, 6);
-      this.add.circle(199, 112, 16, 0x4f4f60);
-      this.add.circle(199, 112, 13, 0x6d6d80);
-      /* 桌上的碗 */
-      g.fillStyle(0x63402a, 1); g.fillRect(120, 200, 250, 8);
-      this.add.circle(190, 194, 10, 0xdcdce2);
-      this.add.circle(190, 194, 7, 0x24242f);
-      /* 抽油烟机 */
-      g.fillStyle(0x383845, 1); g.fillRect(168, 64, 96, 14);
-      g.fillStyle(0x4f4f60, 1); g.fillRect(200, 78, 32, 24);
+      this.livingLayer = this.add.container(0, 0);
+      this.kitchenLayer = this.add.container(0, 0).setVisible(false);
+      if (this.textures.exists('home_living')) {
+        this.livingLayer.add(this.add.image(0, 0, 'home_living').setOrigin(0, 0));
+      }
+      if (this.textures.exists('home_kitchen')) {
+        this.kitchenLayer.add(this.add.image(0, 0, 'home_kitchen').setOrigin(0, 0));
+      }
+      if (!this.textures.exists('home_living') && !this.textures.exists('home_kitchen')) {
+        this.add.rectangle(0, 0, SB.W, SB.H, 0x24242f).setOrigin(0, 0);
+      }
+    },
+
+    showLiving: function () {
+      if (this.livingLayer) this.livingLayer.setVisible(true);
+      if (this.kitchenLayer) this.kitchenLayer.setVisible(false);
+    },
+
+    showKitchen: function () {
+      if (this.livingLayer) this.livingLayer.setVisible(false);
+      if (this.kitchenLayer) this.kitchenLayer.setVisible(true);
     },
 
     /* ---------------- 节拍 ---------------- */
@@ -81,6 +68,7 @@
     living: function () {
       var self = this;
       var o = SB.HomeSave.origin;
+      this.showLiving();
       this.timeLabel.setText('20:55');
 
       if (!o || !o.ownConsole) {
@@ -98,9 +86,9 @@
     consoleMenu: function () {
       var self = this;
       SB.UI.menu(this, {
-        title: '衣柜顶上的纸箱',
+        title: '电视柜旁边的纸箱',
         items: [
-          { label: '搬凳子去够', sub: '看看那台主机', value: 'take' },
+          { label: '蹲下去拖出来', sub: '看看那台主机', value: 'take' },
           { label: '装作没看见', value: 'ignore' },
           { label: '问「那是什么？」', value: 'ask' }
         ],
@@ -127,6 +115,7 @@
 
     kitchen: function () {
       var self = this;
+      this.showKitchen();
       this.timeLabel.setText('21:10');
       SB.UI.dialog(this, SB.HL.kitchen.kitchen, {
         onDone: function () { self.wash(); }

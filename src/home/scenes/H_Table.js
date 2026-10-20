@@ -17,8 +17,9 @@
       var self = this;
       this.cameras.main.setBackgroundColor('#100e12');
       this.drawTable();
-      this.stage = SB.Text.add(this, 14, 8, '第三幕 · 饭桌', 12, 0x6d6d80);
-      this.timeLabel = SB.Text.add(this, SB.W - 14, 8, '21:30', 12, 0x92929f).setOrigin(1, 0);
+      this.add.rectangle(0, 0, SB.W, 20, 0x000000, 0.62).setOrigin(0, 0);
+      this.stage = SB.Text.add(this, 14, 8, '第三幕 · 饭桌', 12, 0xdcdce2);
+      this.timeLabel = SB.Text.add(this, SB.W - 14, 8, '21:30', 12, 0xf5db6e).setOrigin(1, 0);
 
       this.events.once('shutdown', function () { SB.HVoice.stop(); });
       SB.UI.fadeIn(this, 320);
@@ -27,6 +28,10 @@
 
     drawTable: function () {
       var W = SB.W, H = SB.H;
+      if (this.textures.exists('home_table')) {
+        this.add.image(0, 0, 'home_table').setOrigin(0, 0);
+        return;
+      }
       var g = this.add.graphics();
       g.fillStyle(0x1c1a20, 1); g.fillRect(0, 0, W, H);
       /* 窗外月亮 */

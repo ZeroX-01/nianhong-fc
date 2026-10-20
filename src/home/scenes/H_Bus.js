@@ -17,10 +17,12 @@
       this.cameras.main.setBackgroundColor('#07070a');
       this.drawOffice();
       this.drawBus();
+      this.drawStation();
       this.busLayer.setVisible(false);
 
-      this.stage = SB.Text.add(this, 14, 8, '第一幕 · 末班车', 12, 0x6d6d80);
-      this.timeLabel = SB.Text.add(this, SB.W - 14, 8, '18:42', 12, 0x92929f).setOrigin(1, 0);
+      this.add.rectangle(0, 0, SB.W, 20, 0x000000, 0.62).setOrigin(0, 0);
+      this.stage = SB.Text.add(this, 14, 8, '第一幕 · 末班车', 12, 0xdcdce2);
+      this.timeLabel = SB.Text.add(this, SB.W - 14, 8, '18:42', 12, 0xf5db6e).setOrigin(1, 0);
 
       this.events.once('shutdown', function () { SB.HVoice.stop(); });
       SB.UI.fadeIn(this, 320);
@@ -31,6 +33,10 @@
     drawOffice: function () {
       var W = SB.W, H = SB.H;
       this.officeLayer = this.add.container(0, 0);
+      if (this.textures.exists('home_office')) {
+        this.officeLayer.add(this.add.image(0, 0, 'home_office').setOrigin(0, 0));
+        return;
+      }
       var g = this.add.graphics();
       g.fillStyle(0x14141c, 1); g.fillRect(0, 0, W, H);
       /* 会议桌 */
@@ -54,6 +60,10 @@
     drawBus: function () {
       var W = SB.W, H = SB.H;
       this.busLayer = this.add.container(0, 0);
+      if (this.textures.exists('home_bus')) {
+        this.busLayer.add(this.add.image(0, 0, 'home_bus').setOrigin(0, 0));
+        return;
+      }
       var g = this.add.graphics();
       g.fillStyle(0x0c1832, 1); g.fillRect(0, 0, W, H);
       /* 车窗 */
@@ -85,10 +95,25 @@
       this.busLayer.add(SB.Text.add(this, 24, 16, '末班车 · 开往县里', 12, 0x92929f));
     },
 
+    drawStation: function () {
+      this.stationLayer = this.add.container(0, 0).setVisible(false);
+      if (this.textures.exists('home_station')) {
+        this.stationLayer.add(this.add.image(0, 0, 'home_station').setOrigin(0, 0));
+      }
+    },
+
     showBus: function () {
       this.officeLayer.setVisible(false);
+      this.stationLayer.setVisible(false);
       this.busLayer.setVisible(true);
       this.timeLabel.setText('19:20');
+    },
+
+    showStation: function () {
+      this.officeLayer.setVisible(false);
+      this.busLayer.setVisible(false);
+      this.stationLayer.setVisible(true);
+      this.timeLabel.setText('20:05');
     },
 
     /* ---------------- 第一幕的节拍 ---------------- */
@@ -172,6 +197,7 @@
 
     station: function () {
       var self = this;
+      this.showStation();
       SB.UI.dialog(this, SB.HL.bus.station, {
         onDone: function () {
           SB.HomeSave.setChapter('kitchen');
