@@ -127,7 +127,15 @@
         } else {
           res.punish = 'cart';
           var id = s.inserted || s.hidden || (SB.Save.ownedCarts()[0] && SB.Save.ownedCarts()[0].id);
-          if (id) { s.cartSeized = id; s.carts[id].owned = false; }
+          if (id) {
+            s.cartSeized = id;
+            s.carts[id].owned = false;
+            s.carts[id].borrowed = 0;      /* 借来的卡也一并收走，否则这一档惩罚等于没发生 */
+            if (s.inserted === id) {
+              s.inserted = null; s.seated = false; s.fault = null;
+            }
+            if (s.hidden === id) s.hidden = null;
+          }
           res.lines.push(SB.line(SB.L.mom.punishCart));
         }
         /* 作业本救下来的那一档，也要让玩家看见它救了什么 */
@@ -156,7 +164,10 @@
       pullCart: function () {
         var s = SB.Save.d;
         if (!s.inserted) return false;
-        s.inserted = null; SB.Save.save();
+        s.inserted = null;
+        s.seated = false;
+        s.fault = null;      // 卡都不在机器里了，画面故障跟着结束
+        SB.Save.save();
         SB.Audio.sfx('cart_remove');
         return true;
       },
@@ -164,7 +175,11 @@
         var s = SB.Save.d;
         id = id || s.inserted || s.hidden;
         if (!id) return false;
-        if (s.inserted === id) s.inserted = null;   /* 藏起来 = 先从卡槽里拔出来 */
+        if (s.inserted === id) {
+          s.inserted = null;        /* 藏起来 = 先从卡槽里拔出来 */
+          s.seated = false;
+          s.fault = null;           /* 否则电视菜单还会让人去修一张不在的卡 */
+        }
         s.hidden = id; SB.Save.save();
         SB.Audio.sfx('hide_success');
         return true;

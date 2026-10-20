@@ -354,7 +354,7 @@
       this.escLabel = SB.Text.add(this, 8, 5, '收拾', 12, SB.C.WHITE);
       this.escBtn.add([g, this.escLabel]);
       this.escBtn.setPosition(SB.W - 70, 26);
-      var zone = this.add.zone(SB.W - 70, 26, 62, 20).setOrigin(0, 0).setInteractive();
+      var zone = this.add.zone(0, 0, 62, 20).setOrigin(0, 0).setInteractive();
       /* 手指点的是同一颗按钮：还没开始收拾就是「开始」，开始了就是「按一下」 */
       zone.on('pointerdown', function () {
         if (!self.escBtn.visible) return;

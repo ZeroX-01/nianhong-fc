@@ -415,7 +415,7 @@
       if (!s.tvOn) items.push({ label: '开电视', value: 'on' });
       else {
         items.push({ label: '关电视', value: 'off' });
-        if (s.fault) {
+        if (s.fault && s.inserted) {
           items.push({ label: '在电视侧面拍一巴掌', sub: '碰运气', value: 'slap' });
           items.push({ label: '把卡带拿出来弄一下', sub: '推荐', value: 'fix' });
         } else if (s.inserted) {
@@ -560,6 +560,7 @@
       var id = s.inserted;
       SB.Parent.actions.pullCart();
       this.refresh();
+      this.applyScreen();
       this.say(['卡带拔出来了，金手指上有一层灰。']);
     },
 
@@ -820,7 +821,10 @@
       var s = SB.Save.d;
       if (!s.inserted || s.fault || !s.tvOn) return;
       var cs = s.carts[s.inserted];
-      if (cs && cs.dead) { this.say(SB.L.repair.dead); return; }
+      if (!cs || (!cs.owned && !cs.borrowed)) {
+        this.say(['这张卡不在你手里。']); return;
+      }
+      if (cs.dead) { this.say(SB.L.repair.dead); return; }
       SB.UI.go(this, 'Play', { cartId: s.inserted });
     },
 

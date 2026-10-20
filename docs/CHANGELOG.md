@@ -32,6 +32,14 @@
 
 **砍价「行，X 就 X」永远不成交。** `Econ.offer()` 的 `counter = (v + floor) / 2` 恒小于底价，玩家接受摊主报价后仍按低价处理，耐心扣光就谈崩。现在 `counter = max(floor, ...)`，摊主报出的就是他能接受的最低价。验证：12 张卡逐一用「低于底价 → 接受 counter」的路径，12/12 成交；直接出底价成交；过低还价仍然谈崩。
 
+### 花屏拔卡、没收卡带、触屏「收拾」按钮 · 存档版本 4
+
+**花屏时拔卡/藏卡。** `Parent.actions.pullCart/hideCart` 只清 `inserted`，不清 `fault` 和 `seated`。电视菜单在 `fault` 为真时仍给「把卡带拿出来弄一下」，点进去 `RepairScene` 拿到 `cartId = null`，在 `fingerFrame/scratchFrame` 处解引 `undefined` 抛异常。现在拔卡/藏卡同时清 `seated` 和 `fault`；电视菜单只在 `s.fault && s.inserted` 时给修卡入口；`RoomScene.pullCart` 补一次 `applyScreen()`。验证：`fault='GLITCH'` + 无卡时电视菜单只有「关电视 / 算了」；有卡时才出现拍电视和修卡；拔卡后 `inserted/seated/fault` 全空。
+
+**没收卡带。** 第三档惩罚原本只 `owned=false`，没清 `inserted/hidden`，也没清借来的卡的 `borrowed`，`cartSeized` 没有任何读取方。结果卡还插在机器里照样能玩；借来的卡本来就 `owned=false`，惩罚完全无效。现在没收时清 `inserted/seated/fault/hidden`，把 `borrowed` 归零，并在 `enterGame` 里加一道「卡不在手里」的检查。验证：插着卡触发第三档 → `inserted=null, fault=null, owned=false, borrowed=0, cartSeized='02'`；借来的卡同样收走。
+
+**触屏「收拾」按钮。** `escBtn` 容器已经移到 `(SB.W-70, 26)`，热区又用同一组绝对坐标加进容器，实际命中区被二次偏移到屏幕外。现在热区用容器内坐标 `(0,0)`。验证：手机视口（390×844）二级预警后点红色按钮，`rescueOn` 和 `SB.Rescue.live` 都为 true。
+
 ---
 
 ## 2026-09-21
