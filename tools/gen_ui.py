@@ -420,83 +420,12 @@ def gen_focus_ring():
     return save(sheet(frames), os.path.join(OUT, "focus_ring.png"), expect=(48, 24))
 
 
-# ------------------------------------------------------------------ 标题：手工像素美术字
-# 每个字在 34×42 的字格内用矩形/粗线搭笔画（r=矩形, l=粗线）
-GLYPHS = {
-    "小": [("r", 14, 4, 19, 38), ("r", 9, 33, 14, 38),
-           ("l", 11, 13, 3, 30, 5), ("l", 22, 13, 31, 28, 5)],
-    "霸": [  # 雨（去掉内横，改 4 点，减少糊成一团）
-        ("r", 2, 0, 32, 3), ("r", 5, 4, 7, 16), ("r", 16, 6, 18, 16), ("r", 28, 4, 30, 16),
-        ("r", 9, 7, 11, 9), ("r", 22, 7, 24, 9), ("r", 9, 12, 11, 14), ("r", 22, 12, 24, 14),
-        # 革（拉开笔画间距，别糊成一团）
-        ("r", 2, 18, 14, 20), ("r", 6, 18, 9, 41), ("r", 0, 24, 15, 26),
-        ("r", 2, 29, 13, 31), ("r", 2, 31, 4, 36), ("r", 11, 31, 13, 36), ("r", 2, 35, 13, 37),
-        ("r", 0, 39, 15, 41),
-        # 月
-        ("r", 18, 18, 33, 20), ("r", 18, 18, 20, 41), ("r", 31, 18, 33, 39),
-        ("r", 18, 27, 33, 29), ("r", 18, 35, 31, 37), ("r", 21, 39, 31, 41),
-    ],
-    "王": [("r", 5, 5, 29, 10), ("r", 9, 20, 25, 24), ("r", 1, 33, 33, 38), ("r", 13, 5, 20, 38)],
-    "的": [  # 白
-        ("l", 8, 1, 4, 7, 3), ("r", 0, 8, 15, 11), ("r", 0, 8, 3, 39), ("r", 12, 8, 15, 39),
-        ("r", 0, 21, 15, 24), ("r", 0, 36, 15, 39),
-        # 勺
-        ("l", 27, 1, 21, 13, 4), ("r", 19, 14, 33, 17), ("r", 30, 14, 33, 39),
-        ("r", 21, 36, 33, 39), ("r", 23, 24, 28, 29),
-    ],
-    "夏": [("r", 2, 0, 32, 3),
-           # 自（上部方框 + 2 道内横）
-           ("r", 8, 6, 26, 9), ("r", 8, 6, 11, 26), ("r", 23, 6, 26, 26),
-           ("r", 11, 13, 23, 15), ("r", 11, 19, 23, 21), ("r", 8, 24, 26, 26),
-           # 夂：短横撇 + 长撇 + 捺（去掉横长条，别写成「真」）
-           ("l", 6, 29, 15, 31, 3),
-           ("l", 25, 28, 6, 41, 4), ("l", 13, 32, 30, 41, 4)],
-    "天": [("r", 5, 4, 29, 9), ("r", 1, 16, 33, 21),
-           ("l", 18, 21, 3, 40, 5), ("l", 18, 21, 32, 40, 5)],
-}
+# ------------------------------------------------------------------ 标题
+# 标题字直接用游戏自己的 pix16 点阵字重排。
+# 旧版是手绘的 34×42 像素美术字，但改名成《那年的红白机》后缺了
+# 「那 / 年 / 红 / 白 / 机」五个字形（「的」旧表里已有），手绘表维护不下去；
+# 现在从 assets/font/pix16.{png,xml} 取字，描边 / 投影 / 黄高光沿用旧版规则。
 TITLE = "那年的红白机"
-LIFT = [5, 3, 1, -1, -3, -5]
-GW, GH = 34, 42
-GSTEP = 44
-GX0 = 33
-GY0 = 20
-
-
-def _glyph_mask(name, gw=38, gh=40):
-    m = [[False] * gw for _ in range(gh)]
-
-    def put(x, y):
-        if 0 <= x < gw and 0 <= y < gh:
-            m[y][x] = True
-
-    for prim in GLYPHS[name]:
-        if prim[0] == "r":
-            _, x0, y0, x1, y1 = prim
-            for y in range(y0, y1 + 1):
-                for x in range(x0, x1 + 1):
-                    put(x, y)
-        else:
-            _, x0, y0, x1, y1, w = prim
-            dx, dy = abs(x1 - x0), abs(y1 - y0)
-            sx = 1 if x0 < x1 else -1
-            sy = 1 if y0 < y1 else -1
-            err = dx - dy
-            x, y = x0, y0
-            half = w // 2
-            while True:
-                for oy in range(-half, w - half):
-                    for ox in range(-half, w - half):
-                        put(x + ox, y + oy)
-                if x == x1 and y == y1:
-                    break
-                e2 = 2 * err
-                if e2 > -dy:
-                    err -= dy
-                    x += sx
-                if e2 < dx:
-                    err += dx
-                    y += sy
-    return m
 
 
 def mini_cart(cv, x, y):
@@ -539,65 +468,78 @@ def mini_pad(cv, x, y):
 
 
 def gen_title_logo():
+    from PIL import Image, ImageFilter
+    import xml.etree.ElementTree as ET
+
     W, H = 320, 96
     cv = Canvas(W, H)
-    gw, gh = GW, GH
-    mask = [[False] * W for _ in range(H)]
-    for i, ch in enumerate(TITLE):
-        gm = _glyph_mask(ch, gw, gh)
-        ox = GX0 + i * GSTEP
-        oy = GY0 + LIFT[i]
-        for y in range(gh):
-            for x in range(gw):
-                if gm[y][x] and 0 <= ox + x < W and 0 <= oy + y < H:
-                    mask[oy + y][ox + x] = True
 
-    sil = dilate(mask, 3, W, H)          # 3px 描边轮廓
-    # 1) 右下 2px 投影
-    for y in range(H):
-        for x in range(W):
-            if sil[y][x]:
-                cv.set(x + 2, y + 2, "RED1")
-    # 2) INK 描边
-    for y in range(H):
-        for x in range(W):
-            if sil[y][x]:
-                cv.set(x, y, "INK")
-    # 3) 字身：红为主、笔画顶端 1~2px 黄高光、底端压暗，做出厚度
-    for y in range(H):
-        for x in range(W):
-            if not mask[y][x]:
-                continue
-            up = 0
-            while y - up - 1 >= 0 and mask[y - up - 1][x]:
-                up += 1
-                if up > 8:
-                    break
-            dn = 0
-            while y + dn + 1 < H and mask[y + dn + 1][x]:
-                dn += 1
-                if dn > 8:
-                    break
-            th = up + dn + 1
-            if up == 0:
-                c = "YEL4"
-            elif up == 1 and th >= 4:
-                c = "YEL3"
-            elif up == 2 and th >= 7:
-                c = "YEL3"
-            elif dn == 0 and th >= 3:
-                c = "RED1"
-            elif dn == 1 and th >= 5:
-                c = "RED2"
-            else:
-                c = "RED3"
-            # 左缘提亮 / 右缘压暗（横向厚度感）
-            if c == "RED3":
-                if x > 0 and not mask[y][x - 1]:
-                    c = "RED4"
-                elif x + 1 < W and not mask[y][x + 1]:
-                    c = "RED2"
-            cv.set(x, y, c)
+    S = 42                 # 每个字的像素尺寸（16px 字形 × 42/16）
+    STEP = 43              # 字距
+    LIFT = [4, 2, 0, -1, -2, -4]
+    font = Image.open(os.path.join(ROOT, "assets", "font", "pix16.png")).convert("RGBA")
+    book = {int(c.get("id")): c for c in
+            ET.parse(os.path.join(ROOT, "assets", "font", "pix16.xml")).getroot().iter("char")}
+    total_w = STEP * (len(TITLE) - 1) + S
+    x0 = (W - total_w) // 2
+    y0 = 20
+
+    def rgba(name):
+        return P[name] + (255,)
+
+    parts = []
+    for i, ch in enumerate(TITLE):
+        c = book[ord(ch)]
+        gx, gy, gw, gh = (int(c.get(k)) for k in ("x", "y", "width", "height"))
+        alpha = font.crop((gx, gy, gx + gw, gy + gh)).getchannel("A")
+        alpha = alpha.point(lambda v: 255 if v > 64 else 0)
+        cell = Image.new("L", (S, S), 0)
+        cell.paste(alpha.resize((round(gw * S / 16.0), round(gh * S / 16.0)), Image.NEAREST),
+                   (round(int(c.get("xoffset")) * S / 16.0),
+                    round(int(c.get("yoffset")) * S / 16.0)))
+        cell = cell.filter(ImageFilter.MaxFilter(3))        # 加粗 1px，接近旧版笔画厚度
+        outline = cell.filter(ImageFilter.MaxFilter(7))     # 3px 描边
+        body = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        a = cell.load()
+        for y in range(S):
+            for x in range(S):
+                if a[x, y] == 0:
+                    continue
+                up = 0
+                while y - up - 1 >= 0 and a[x, y - up - 1] and up <= 10:
+                    up += 1
+                dn = 0
+                while y + dn + 1 < S and a[x, y + dn + 1] and dn <= 10:
+                    dn += 1
+                th = up + dn + 1
+                if up == 0:
+                    col = "YEL4"
+                elif up <= 2 and th >= 6:
+                    col = "YEL3"
+                elif dn == 0 and th >= 3:
+                    col = "RED1"
+                elif dn == 1 and th >= 5:
+                    col = "RED2"
+                else:
+                    col = "RED3"
+                # 左缘提亮 / 右缘压暗（横向厚度感）
+                if col == "RED3":
+                    if x > 0 and not a[x - 1, y]:
+                        col = "RED4"
+                    elif x + 1 < S and not a[x + 1, y]:
+                        col = "RED2"
+                body.putpixel((x, y), rgba(col))
+        parts.append((x0 + i * STEP, y0 + LIFT[i], outline, body))
+
+    # 先所有投影，再所有描边，最后所有字身；后一个字不会压住前一个字的边
+    for px, py, outline, body in parts:
+        cv.img.paste(Image.new("RGBA", (S, S), rgba("RED1")), (px + 2, py + 2), outline)
+    for px, py, outline, body in parts:
+        cv.img.paste(Image.new("RGBA", (S, S), rgba("INK")), (px, py), outline)
+    for px, py, outline, body in parts:
+        cv.img.alpha_composite(body, (px, py))
+    cv.px = cv.img.load()      # 直接改过 img，PixelAccess 重新取一次
+
     # 4) 副标题：1px 抽象小字纹（带 1px INK 阴影）
     rng = rng_for(1990)
     sub_y = 79
@@ -617,6 +559,7 @@ def gen_title_logo():
         for x in range(W):
             if tmp.alpha(x, y) > 0:
                 cv.set(x, y, "YEL4")
+
     # 5) 左右装饰
     mini_cart(cv, 2, 56)
     mini_pad(cv, 290, 66)
