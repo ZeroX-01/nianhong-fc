@@ -14,6 +14,7 @@
       this.washCount = 0;
       this.washTxt = null;
       this.consoleAsked = false;
+      this.canBox = false;
     },
 
     create: function () {
@@ -41,23 +42,46 @@
       if (!this.textures.exists('home_living') && !this.textures.exists('home_kitchen')) {
         this.add.rectangle(0, 0, SB.W, SB.H, 0x24242f).setOrigin(0, 0);
       }
+
+      /* 妈妈：门口一个、灶台前一个，跟着图层一起显示/隐藏 */
+      if (this.textures.exists('home_mom')) {
+        this.kitchenMom = this.add.sprite(320, 40, 'home_mom', 0).setOrigin(0, 0).setScale(2);
+        this.kitchenLayer.add(this.kitchenMom);
+      }
+
+      /* 纸箱热点：让玩家真的去点那个箱子，而不是只读一行菜单 */
+      this.boxRing = this.add.rectangle(292, 214, 52, 30)
+        .setOrigin(0, 0).setDepth(SB.D.FOCUS)
+        .setStrokeStyle(1, 0xf5db6e, 0.85).setVisible(false);
+      this.tweens.add({ targets: this.boxRing, alpha: 0.35, duration: 800, yoyo: true, repeat: -1 });
+      this.boxZone = this.add.zone(292, 214, 52, 30).setOrigin(0, 0).setInteractive();
+      var selfBox = this;
+      this.boxZone.on('pointerdown', function () {
+        if (!selfBox.canBox || SB.__dialogOpen || SB.__menu) return;
+        selfBox.consoleMenu();
+      });
     },
 
     showLiving: function () {
       if (this.livingLayer) this.livingLayer.setVisible(true);
       if (this.kitchenLayer) this.kitchenLayer.setVisible(false);
+      this.canBox = true;
+      if (this.boxRing) this.boxRing.setVisible(true);
     },
 
     showKitchen: function () {
       if (this.livingLayer) this.livingLayer.setVisible(false);
       if (this.kitchenLayer) this.kitchenLayer.setVisible(true);
+      this.canBox = false;
+      if (this.boxRing) this.boxRing.setVisible(false);
     },
 
     /* ---------------- 节拍 ---------------- */
     door: function () {
       var self = this;
       SB.HVoice.play('mom_door');
-      SB.UI.dialog(this, SB.HL.kitchen.door, {
+      SB.HomeBubble.say(this, SB.HL.bub.door, {
+        momPos: { x: 430, y: 110 },
         onDone: function () {
           SB.HVoice.stop();
           self.living();
@@ -79,12 +103,25 @@
       }
 
       SB.UI.dialog(this, SB.HL.kitchen.living, {
-        onDone: function () { self.consoleMenu(); }
+        onDone: function () {
+          self.canBox = true;
+          if (self.boxRing) self.boxRing.setVisible(true);
+          self.showBoxPrompt();
+        }
       });
+    },
+
+    showBoxPrompt: function () {
+      if (this.boxPrompt) { this.boxPrompt.setVisible(true); return; }
+      this.boxPrompt = SB.Text.add(this, SB.W / 2, 252, '点电视柜旁边的纸箱 · 或按 A', 12, 0xf5db6e)
+        .setOrigin(0.5, 0).setDepth(SB.D.HUD);
     },
 
     consoleMenu: function () {
       var self = this;
+      this.canBox = false;
+      if (this.boxRing) this.boxRing.setVisible(false);
+      if (this.boxPrompt) this.boxPrompt.setVisible(false);
       SB.UI.menu(this, {
         title: '电视柜旁边的纸箱',
         items: [
@@ -116,8 +153,10 @@
     kitchen: function () {
       var self = this;
       this.showKitchen();
+      if (this.boxPrompt) this.boxPrompt.setVisible(false);
       this.timeLabel.setText('21:10');
-      SB.UI.dialog(this, SB.HL.kitchen.kitchen, {
+      SB.HomeBubble.say(this, SB.HL.bub.kitchen, {
+        momPos: { x: 320, y: 40 },
         onDone: function () { self.wash(); }
       });
     },
@@ -182,9 +221,14 @@
             SB.HomeSave.d.listen++;
             SB.HomeSave.save();
           }
-          var lines = it.value === 'mom' ? SB.HL.kitchen.talkMom
-            : (it.value === 'dad' ? SB.HL.kitchen.talkDad : SB.HL.kitchen.talkSkip);
-          SB.UI.dialog(self, lines, {
+          if (it.value === 'mom' || it.value === 'dad') {
+            SB.HomeBubble.say(self, it.value === 'mom' ? SB.HL.bub.talkMom : SB.HL.bub.talkDad, {
+              momPos: { x: 320, y: 40 },
+              onDone: function () { self.dinner(); }
+            });
+            return;
+          }
+          SB.UI.dialog(self, SB.HL.kitchen.talkSkip, {
             onDone: function () { self.dinner(); }
           });
         }
@@ -207,6 +251,11 @@
 
     update: function () {
       SB.Input.update();
+      if (this.canBox && SB.Input.p1.just.a && !SB.HomeBubble.active &&
+          !SB.__dialogOpen && !(SB.__menu && SB.__menu.isOpen())) {
+        this.consoleMenu();
+        return;
+      }
       this.washTick();
     }
   });

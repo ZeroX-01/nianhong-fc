@@ -20,6 +20,7 @@
       for (var k in imgs) {
         if (Object.prototype.hasOwnProperty.call(imgs, k)) this.load.image(k, 'assets/home/' + imgs[k]);
       }
+      this.load.spritesheet('home_mom', 'assets/home/mom_old.png', { frameWidth: 28, frameHeight: 54 });
     },
 
     create: function () {

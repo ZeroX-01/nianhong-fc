@@ -253,6 +253,72 @@
       ]
     },
 
+    bub: {
+      door: [
+        { who: 'mom', text: '回来啦。' },
+        { who: 'mom', text: '怎么买这么多。说了家里有。' },
+        { who: 'you', text: '鱼二十八。' },
+        { who: 'mom', text: '贵了。下次我去买。' }
+      ],
+      kitchen: [
+        { who: 'mom', text: '你坐着去，别在这儿添乱。' },
+        { who: 'you', text: '我帮你。' },
+        { who: 'mom', text: '你会干什么。' },
+        { who: 'you', text: '我会洗菜。' }
+      ],
+      talkMom: [
+        { who: 'you', text: '你一个人在家都吃什么？' },
+        { who: 'mom', text: '一个人好对付。' },
+        { who: 'mom', text: '煮点面，热热就吃了。' },
+        { who: 'you', text: '冰箱里那两盒，是昨天的吧。' },
+        { who: 'mom', text: '……你眼睛倒尖。' }
+      ],
+      talkDad: [
+        { who: 'you', text: '爸呢？' },
+        { who: 'mom', text: '厂里值班。明天回来。' },
+        { who: 'mom', text: '他给你留了月饼。五仁的。' },
+        { who: 'you', text: '……我其实不爱吃五仁。' },
+        { who: 'mom', text: '我知道。他也不知道。' }
+      ],
+      work: [
+        { who: 'you', text: '张总的电话。' },
+        { who: 'mom', text: '你先接。' },
+        { who: 'you', text: '不用。' },
+        { who: 'mom', text: '不接没事吧？' },
+        { who: 'you', text: '今天没有急事。' }
+      ],
+      health: [
+        { who: 'you', text: '药按时吃了吗？' },
+        { who: 'mom', text: '吃了吃了。' },
+        { who: 'you', text: '这盒怎么还是满的。' },
+        { who: 'mom', text: '……有时候忘。' },
+        { who: 'you', text: '明天我陪你去查一下。' },
+        { who: 'mom', text: '不用。你明天不是要走吗。' }
+      ],
+      consoleOwn: [
+        { who: 'you', text: '电视旁边那个纸箱……是我那年买的吧。' },
+        { who: 'mom', text: '你的东西，你自己收着。' },
+        { who: 'you', text: '还能用吗？' },
+        { who: 'mom', text: '不知道。电视还能用，就是颜色偏。' },
+        { who: 'you', text: '……我带走。' }
+      ],
+      consoleLost: [
+        { who: 'you', text: '我小时候那台，后来还回去了吧。' },
+        { who: 'mom', text: '人家孩子上初中了，机器要回去了。' },
+        { who: 'mom', text: '你那年站在集市上，看了半天。' },
+        { who: 'you', text: '……我记得。' },
+        { who: 'mom', text: '后来你就不要了。' }
+      ],
+      childhood: [
+        { who: 'mom', text: '你小时候藏卡带，藏得可好了。' },
+        { who: 'you', text: '你怎么知道？' },
+        { who: 'mom', text: '沙发缝里那张，我扫地扫出来过。' },
+        { who: 'you', text: '那你怎么不没收？' },
+        { who: 'mom', text: '我想着，你玩吧。' },
+        { who: 'mom', text: '你那时候，也就那点乐子。' }
+      ]
+    },
+
     end: {
       stay_warm: [
         '你在沙发上睡着了。醒来的时候，电视已经关了，毯子还在身上。',

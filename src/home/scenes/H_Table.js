@@ -11,12 +11,16 @@
       this.from = (data && data.from) || 'kitchen';
       this.leaving = false;
       this.done = {};
+      this.spots = [];
+      this.cur = 0;
+      this.need = 3;
     },
 
     create: function () {
       var self = this;
       this.cameras.main.setBackgroundColor('#100e12');
       this.drawTable();
+      this.buildProps();
       this.add.rectangle(0, 0, SB.W, 20, 0x000000, 0.62).setOrigin(0, 0);
       this.stage = SB.Text.add(this, 14, 8, '第三幕 · 饭桌', 12, 0xdcdce2);
       this.timeLabel = SB.Text.add(this, SB.W - 14, 8, '21:30', 12, 0xf5db6e).setOrigin(1, 0);
@@ -75,163 +79,128 @@
     /* ---------------- 节拍 ---------------- */
     opening: function () {
       var self = this;
-      SB.UI.dialog(this, SB.HL.table.opening, {
-        onDone: function () { self.topics(); }
-      });
-    },
-
-    topics: function () {
-      var self = this;
-      var items = [];
-      if (!this.done.work) items.push({ label: '「最近忙不忙？」', sub: '工作', value: 'work' });
-      if (!this.done.body) items.push({ label: '「你血压最近怎么样？」', sub: '身体', value: 'body' });
-      if (!items.length) { this.call(); return; }
-
-      SB.UI.menu(this, {
-        title: '说点什么',
-        items: items,
-        width: 260,
-        y: 88,
-        cancelable: false,
-        onPick: function (it) {
-          if (it.value === 'work') self.work();
-          else self.body();
-        }
-      });
-    },
-
-    work: function () {
-      var self = this;
-      this.done.work = true;
-      this.timeLabel.setText('21:40');
-      SB.UI.dialog(this, SB.HL.table.workIntro, {
+      SB.UI.dialog(this, [
+        '你们面对面坐着。你爸的位置空着。',
+        '窗外有人在楼下放小烟花，噼啪两声，就没了。'
+      ], {
         onDone: function () {
-          SB.UI.menu(self, {
-            title: '工作',
-            items: [
-              { label: '「就是老加班。」', value: 'honest' },
-              { label: '「还行，不怎么忙。」', value: 'surface' },
-              { label: '看一眼手机', value: 'phone' }
-            ],
-            width: 248,
-            y: 92,
-            cancelable: false,
-            onPick: function (it) {
-              if (it.value === 'phone') {
-                SB.HomeSave.d.phone++;
-                SB.HomeSave.save();
-                SB.UI.dialog(self, ['你低头看了一眼。工作群又亮了。', '「你先忙。」她说。'], {
-                  onDone: function () { self.topics(); }
-                });
-                return;
-              }
-              var lines = it.value === 'honest' ? SB.HL.table.workHonest : SB.HL.table.workSurface;
-              SB.UI.dialog(self, lines, {
-                onDone: function () {
-                  if (it.value !== 'honest') { self.topics(); return; }
-                  SB.UI.menu(self, {
-                    title: '再说一句',
-                    items: [
-                      { label: '「你年轻的时候，也加班吗？」', value: 'ask' },
-                      { label: '「说了你也不懂。」', value: 'no' },
-                      { label: '不说了，吃饭', value: 'back' }
-                    ],
-                    width: 280,
-                    y: 88,
-                    cancelable: false,
-                    onPick: function (it2) {
-                      if (it2.value === 'ask') {
-                        SB.HomeSave.d.listen++;
-                        SB.HomeSave.save();
-                        SB.UI.dialog(self, SB.HL.table.workAsk, {
-                          onDone: function () { self.topics(); }
-                        });
-                        return;
-                      }
-                      if (it2.value === 'no') {
-                        SB.UI.dialog(self, SB.HL.table.workNo, {
-                          onDone: function () { self.topics(); }
-                        });
-                        return;
-                      }
-                      self.topics();
-                    }
-                  });
-                }
-              });
-            }
-          });
+          SB.HomeBubble.say(self, [
+            { who: 'mom', text: '吃啊。凉了就不好吃了。' },
+            { who: 'you', text: '嗯。' },
+            { who: 'mom', text: '鱼你多吃点。' }
+          ], { momPos: { x: 300, y: 58 }, onDone: function () { self.buildHotspots(); } });
         }
       });
     },
 
-    body: function () {
+    /* ---------------- 桌上的物件 ----------------
+     * 不再弹「话题菜单」：点桌上的手机/药瓶/电视/挂历，妈妈自己会说话。 */
+    buildProps: function () {
+      var W = SB.W;
+      /* 桌上：手机、药瓶 */
+      this.phone = this.add.rectangle(358, 166, 14, 22, 0x14141c).setOrigin(0, 0).setDepth(SB.D.PROP);
+      this.phone.setStrokeStyle(1, 0x6d6d80, 1);
+      this.add.rectangle(360, 169, 10, 15, 0x93d4ea, 0.85).setOrigin(0, 0).setDepth(SB.D.PROP + 1);
+      this.medicine = this.add.rectangle(428, 146, 12, 18, 0xdcdce2).setOrigin(0, 0).setDepth(SB.D.PROP);
+      this.medicine.setStrokeStyle(1, 0x6d6d80, 1);
+      this.add.rectangle(428, 142, 12, 5, 0xd93a34).setOrigin(0, 0).setDepth(SB.D.PROP + 1);
+
+      /* 妈妈：坐在桌子对面，只露上半身 */
+      if (this.textures.exists('home_mom')) {
+        this.mom = this.add.sprite(310, 58, 'home_mom', 0).setOrigin(0, 0).setDepth(SB.D.CHAR);
+      }
+
+      this.hintSpot = SB.Text.add(this, W / 2, 24, '点桌上的东西 · 方向键选 · A 看', 12, 0xdcdce2)
+        .setOrigin(0.5, 0).setDepth(SB.D.HUD);
+      this.focus = SB.UI.focus(this, { dim: 0, label: true });
+    },
+
+    buildHotspots: function () {
       var self = this;
-      this.done.body = true;
-      this.timeLabel.setText('21:55');
-      SB.UI.dialog(this, SB.HL.table.bodyIntro, {
-        onDone: function () {
-          SB.UI.menu(self, {
-            title: '身体',
-            items: [
-              { label: '「你血压最近怎么样？」', value: 'ask' },
-              { label: '「药按时吃了吗？」', value: 'med' },
-              { label: '装作没看见', value: 'ignore' }
-            ],
-            width: 270,
-            y: 92,
-            cancelable: false,
-            onPick: function (it) {
-              if (it.value === 'ignore') {
-                SB.UI.dialog(self, SB.HL.table.bodyIgnore, {
-                  onDone: function () { self.topics(); }
-                });
-                return;
-              }
-              if (it.value === 'med') {
-                SB.UI.dialog(self, SB.HL.table.bodyMedicine, {
-                  onDone: function () { self.topics(); }
-                });
-                return;
-              }
-              SB.HomeSave.d.listen++;
-              SB.HomeSave.save();
-              SB.UI.dialog(self, SB.HL.table.bodyAsk, {
-                onDone: function () {
-                  SB.UI.menu(self, {
-                    title: '明天',
-                    items: [
-                      { label: '「明天我陪你去医院查一下。」', value: 'clinic' },
-                      { label: '「你自己注意点。」', value: 'care' },
-                      { label: '不说了', value: 'back' }
-                    ],
-                    width: 280,
-                    y: 90,
-                    cancelable: false,
-                    onPick: function (it2) {
-                      if (it2.value === 'clinic') {
-                        SB.HomeSave.d.listen++;
-                        SB.HomeSave.save();
-                        SB.UI.dialog(self, SB.HL.table.bodyClinic, { onDone: function () { self.topics(); } });
-                        return;
-                      }
-                      if (it2.value === 'care') {
-                        SB.UI.dialog(self, SB.HL.table.bodyCare, { onDone: function () { self.topics(); } });
-                        return;
-                      }
-                      self.topics();
-                    }
-                  });
-                }
-              });
-            }
+      this.spots = [
+        { id: 'work',      x: 350, y: 160, w: 30, h: 34, name: '手机' },
+        { id: 'health',    x: 422, y: 136, w: 24, h: 32, name: '药' },
+        { id: 'console',   x: 150, y: 34,  w: 176, h: 78, name: '电视' },
+        { id: 'childhood', x: 120, y: 44,  w: 34, h: 46, name: '挂历' }
+      ];
+      for (var i = 0; i < this.spots.length; i++) {
+        (function (sp, idx) {
+          sp.zone = self.add.zone(sp.x, sp.y, sp.w, sp.h).setOrigin(0, 0)
+            .setDepth(SB.D.FOCUS + 1).setInteractive({ useHandCursor: true });
+          sp.zone.on('pointerover', function () { if (!self.done[sp.id]) { self.cur = idx; self.refreshSpot(); } });
+          sp.zone.on('pointerdown', function () {
+            if (SB.HomeBubble.active || SB.__dialogOpen || SB.__menu) return;
+            self.cur = idx; self.refreshSpot(); self.interact(sp.id);
           });
-        }
+        })(this.spots[i], i);
+      }
+      this.cur = 0;
+      this.refreshSpot();
+      this.updateHint();
+    },
+
+    refreshSpot: function () {
+      var sp = this.spots[this.cur];
+      if (!sp) return;
+      this.focus.at(sp.x - 2, sp.y - 2, sp.w + 4, sp.h + 4, sp.name);
+    },
+
+    moveSpot: function (d) {
+      if (!this.spots.length) return;
+      var n = this.spots.length, i = this.cur, guard = 0;
+      do { i = (i + d + n) % n; guard++; } while (this.done[this.spots[i].id] && guard <= n);
+      if (!this.done[this.spots[i].id]) {
+        this.cur = i;
+        this.refreshSpot();
+        SB.Audio.sfx('ui_move', { volume: 0.4 });
+      }
+    },
+
+    updateHint: function () {
+      var left = 0, i;
+      for (i = 0; i < this.spots.length; i++) if (!this.done[this.spots[i].id]) left++;
+      if (this.hintSpot) this.hintSpot.setText(left ? '点桌上的东西 · 还有 ' + left + ' 样 · A 看' : '吃得差不多了');
+    },
+
+    interact: function (id) {
+      var self = this;
+      if (this.done[id] || SB.HomeBubble.active) return;
+      this.done[id] = true;
+      var sp = null, i;
+      for (i = 0; i < this.spots.length; i++) if (this.spots[i].id === id) sp = this.spots[i];
+      if (sp && sp.zone) { sp.zone.disableInteractive(); }
+      if (this.focus) this.focus.hide();
+      if (this.hintSpot) this.hintSpot.setVisible(false);
+      SB.HomeSave.d.listen++;
+      SB.HomeSave.save();
+
+      var lines;
+      if (id === 'work') lines = SB.HL.bub.work;
+      else if (id === 'health') lines = SB.HL.bub.health;
+      else if (id === 'childhood') lines = SB.HL.bub.childhood;
+      else lines = (SB.HomeSave.origin && SB.HomeSave.origin.ownConsole) ? SB.HL.bub.consoleOwn : SB.HL.bub.consoleLost;
+
+      SB.HomeBubble.say(this, lines, {
+        momPos: { x: 300, y: 58 },
+        onDone: function () { self.afterTopic(); }
       });
+      this.updateHint();
+    },
+
+    afterTopic: function () {
+      var n = 0, i;
+      for (i = 0; i < this.spots.length; i++) if (this.done[this.spots[i].id]) n++;
+      if (n >= this.need) { this.call(); return; }
+      if (this.hintSpot) this.hintSpot.setVisible(true);
+      this.updateHint();
+      if (this.spots[this.cur] && this.done[this.spots[this.cur].id]) this.moveSpot(1);
+      else this.refreshSpot();
     },
 
     call: function () {
       var self = this;
+      if (this.focus) this.focus.hide();
+      if (this.hintSpot) this.hintSpot.setVisible(false);
       this.timeLabel.setText('22:20');
       SB.UI.dialog(this, SB.HL.table.call, {
         onDone: function () {
@@ -312,6 +281,14 @@
 
     update: function () {
       SB.Input.update();
+      if (SB.HomeBubble.active || SB.__dialogOpen || (SB.__menu && SB.__menu.isOpen())) return;
+      if (!this.spots || !this.spots.length) return;
+      var p = SB.Input.p1;
+      if (p.just.left) this.moveSpot(-1);
+      if (p.just.right) this.moveSpot(1);
+      if (p.just.up) this.moveSpot(-1);
+      if (p.just.down) this.moveSpot(1);
+      if (p.just.a) this.interact(this.spots[this.cur].id);
     }
   });
 
