@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<!--
+  回家吃饭 / Dinner at Home
+  《那年的红白机》续篇 · 可玩样片
+  纯静态，无构建；和 index.html 共用 vendor / src/core。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#14141c">
+<title>回家吃饭</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%2314141c'/><circle cx='11' cy='5' r='3' fill='%23f5db6e'/><rect x='2' y='10' width='12' height='4' fill='%23a8764c'/></svg>">
+<style>
+  :root { color-scheme: dark; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body {
+    width:100%; height:100%; overflow:hidden;
+    background:#0a0a0e;
+    background-image: radial-gradient(120% 90% at 50% 42%, #1c1a20 0%, #0d0c10 62%, #060608 100%);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    overscroll-behavior: none;
+  }
+  #game { width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+  #game canvas { image-rendering: pixelated; display:block; box-shadow: 0 0 0 1px #2a2730, 0 18px 60px -10px rgba(0,0,0,.85); }
+  #boot {
+    position:fixed; inset:0; z-index:50;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+    background:#0a0a0e; color:#c99a6a;
+    font:400 13px/1.9 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing:.14em; transition:opacity .5s ease-out;
+  }
+  #boot.gone { opacity:0; pointer-events:none; }
+  #boot .brand { color:#dcdce2; font-size:15px; letter-spacing:.5em; }
+  #boot .tip { color:#6d6d80; font-size:11px; letter-spacing:.08em; }
+  #fatal {
+    position:fixed; inset:0; z-index:60; display:none; padding:28px;
+    background:#0a0a0e; color:#d93a34; overflow:auto;
+    font:400 12px/1.7 ui-monospace, monospace; white-space:pre-wrap;
+  }
+</style>
+</head>
+<body>
+<div id="game"></div>
+
+<div id="boot">
+  <div class="brand">回 家 吃 饭</div>
+  <div class="tip">正在热饭…</div>
+</div>
+
+<pre id="fatal"></pre>
+
+<script>
+  window.SB = { version: '0.1.0' };
+  window.addEventListener('error', function (e) {
+    var el = document.getElementById('fatal');
+    if (!el || window.SB.started) return;
+    el.style.display = 'block';
+    el.textContent += '【运行错误】' + (e.message || e) + '\n' + ((e.error && e.error.stack) || '') + '\n\n';
+  });
+</script>
+
+<script src="vendor/phaser.min.js"></script>
+
+<script src="src/core/const.js"></script>
+<script src="src/data/cartridges.js"></script>
+<script src="src/core/save.js"></script>
+<script src="src/core/audio.js"></script>
+<script src="src/core/input.js"></script>
+<script src="src/core/text.js"></script>
+<script src="src/core/ui.js"></script>
+<script src="src/core/crt.js"></script>
+
+<script src="src/home/homeSave.js"></script>
+<script src="src/home/homeLines.js"></script>
+<script src="src/home/scenes/H_Boot.js"></script>
+<script src="src/home/scenes/H_Title.js"></script>
+<script src="src/home/scenes/H_Bus.js"></script>
+<script src="src/home/scenes/H_Kitchen.js"></script>
+<script src="src/home/scenes/H_Table.js"></script>
+<script src="src/home/scenes/H_End.js"></script>
+<script src="src/home/main.js"></script>
+</body>
+</html>

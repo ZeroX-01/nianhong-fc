@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 # 一旦 dist/ 自己成了仓库，部署就会换域名（v2 的包相反，它必须自带 dist/.git）。
 rm -rf dist
 mkdir -p dist
-cp index.html README.md dist/
+cp index.html home.html README.md dist/
 cp -r src vendor assets dist/
 
 python3 - <<'PY'
